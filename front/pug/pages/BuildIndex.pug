@@ -1,31 +1,38 @@
 .land
-    .land__logo
-        img(src="./img/logo.png" alt="favbet")
-    //.land__left
-    //    .land__title До нових висот з бонусом*
-    //    .land__prize 15 000₴
-    //    .land__spins + 300 фрiспiнiв
-    //    .land__btn хапай штурвал
-    //.land__right
-    //    .land__right-pers
-    //        img(src="./img/pers.png" alt="favbet")
-    //    .land__right-plane
-    //        img(src="./img/plane.png" alt="favbet")
-.footer
-    .footer__text  ТОВ «БУКМЕКЕРСЬКА КОМПАНІЯ «ФАВБЕТ». Ліцензія на провадження діяльності з організації та проведення букмекерської діяльності від 28.12.2022, видана згідно з рішенням КРАІЛ № 433 від 13.12.2022 та Ліцензія на провадження діяльності з організації та проведення азартних ігор казино в мережі Інтернет від 20.04.2021, видана згідно з рішенням КРАІЛ № 137 від 05.04.2021, зі змінами.
-    .footer__wrap
-        ul.footer__licensed
-            li.footer__licensed-item
-                img(src="./img/age.svg" alt="favbet")
-            li.footer__licensed-item
-                img(src="./img/applePay.svg" alt="favbet")
-            li.footer__licensed-item
-                img(src="./img/googlePay.svg" alt="favbet")
-            li.footer__licensed-item
-                img(src="./img/visa.svg" alt="favbet")
-            li.footer__licensed-item
-                img(src="./img/mastercard.svg" alt="favbet")
-        .footer__btns
-            a(href="https://apps.apple.com/ua/app/favbet-ua/id1580749519" target="_blank").footer__appstore
-            a(href="https://favbet.ua/minio/android-files/FavbetUA.apk" target="_blank").footer__googlePlay
-.legal УЧАСТЬ В АЗАРТНИХ ІГРАХ МОЖЕ ВИКЛИКАТИ ІГРОВУ ЗАЛЕЖНІСТЬ. ДОТРИМУЙТЕСЯ ПРАВИЛ (ПРИНЦИПІВ) ВІДПОВІДАЛЬНОЇ ГРИ
+    .land__left
+        .land__logo
+            img(src="./img/logo.png" alt="favbet")
+        .land__title
+            .land__title-item Zavrti
+            .land__title-item loto
+            .land__title-item kugle i preuzmi
+        .land__subtitle svoj bonus!
+        button.land__btn.btn Zaigraj
+    .land__game
+        canvas#gameGlass
+    .land__char
+        picture.land__char-img
+            source(media="(max-width: 600px)" srcset="img/char-mob.png")
+            source(media="(max-width: 1050px)" srcset="img/char-tab.png")
+            img(src="img/char.png" alt="favet")
+        .land__char-bubble Tvoj trenutak sreće počinje ovdje!
+.overlay._opacity
+    .popup(data-popup="winPopup")
+        .popup__close
+        .popup__title ODLIČNO,osvojio si
+        .popup__prize 3000 €
+        .popup__icon
+            img(src='img/popup-icon' alt="favbet")
+        .popup__text Ostao ti je još #[span jedan] pokušaj
+        button.popup__btn.btn Odigraj ponovo
+    .popup(data-popup="winPopup2")
+        .popup__close
+        .popup__title Ti si prava zvijezda! <br> Tvoj dobitak je:
+        .popup__prize 500 FS
+        .popup__icon
+            img(src='img/popup-icon' alt="favbet")
+            .popup__icon-decor +3000 €
+        .popup__text Registriraj se, napravi deposit i uzmi bonus
+        button.popup__btn.btn UZMI BONUS
+        .popup__bottom *prvi deposit od min 7 € - 100 FS, drugi deposit od min 7 € još 100 FS
+

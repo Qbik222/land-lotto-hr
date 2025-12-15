@@ -9,6 +9,20 @@ $font-suisse-intl-bold: SuisseIntl-Bold, sans-serif
 $font-legal: DINPro-CondLight, sans-serif
 $font-riffic-bold: Riffic-Bold, sans-serif
 
+.hide
+  display: none !important
+
+._opacity
+  opacity: 0 !important
+  pointer-events: none !important
+
+.overlay
+  position: fixed
+  top: 0
+  left: 0
+  width: 100%
+  height: 100%
+
 body
   overscroll-behavior: none
   img
@@ -22,46 +36,3 @@ body
     top: 0
     left: 0
     max-width: 300px
-.footer
-  background: $blue
-  height: 83px
-  display: flex
-  padding: 5px 20px 5px 35px
-  align-items: center
-  justify-content: space-between
-  &__wrap
-    display: flex
-    align-items: center
-  &__text
-    color: $white
-    font-family: $font-suisse-intl-reg
-    font-size: 14px
-    line-height: 22px
-    max-width: 975px
-    opacity: .8
-  &__licensed
-    display: flex
-    align-items: center
-    gap: 18px
-    margin: 0 35px 0 auto
-    flex-shrink: 0
-  &__btns
-    display: flex
-    align-items: center
-  &__appstore
-    display: block
-    background: url("../img/appleBtn.png") no-repeat 0 0/contain
-    width: 114px
-    height: 38px
-  &__googlePlay
-    display: block
-    background: url("../img/googleBtn.svg") no-repeat 0 0/contain
-    width: 128px
-    height: 38px
-    margin-left: 10px
-
-.legal
-  font-family: $font-legal
-  font-size: 4.7vw
-  padding: 0 15px
-  text-align: center
