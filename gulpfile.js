@@ -16,6 +16,10 @@ let gulp = require('gulp')
 , cleanCSS = require('gulp-clean-css')
 , rename = require('gulp-rename')
 , uglify = require('gulp-uglify')
+, browserify = require('browserify')
+, babelify = require('babelify')
+, source = require('vinyl-source-stream')
+, buffer = require('vinyl-buffer')
 ;
 
  // For Prodaction
@@ -59,18 +63,21 @@ let gulp = require('gulp')
     });
 //JS
     gulp.task('js', function(){
-        return gulp.src('front/js/*.js')
-            .pipe(plumber({
-                errorHandler: notify.onError()
-            }))
-            .pipe(gulpIf(isDevelopment, sourcemaps.init()))
-            .pipe(babel({
-                presets: ['@babel/env']
-            }))
-            .pipe(concat('main.js'))
-            .pipe(gulpIf(isDevelopment, sourcemaps.write()))
-            .pipe(gulpIf(isProduction, uglify()))
-            .pipe(gulp.dest('build/js'));
+        return browserify({
+            entries: 'front/js/main.js',
+            debug: isDevelopment
+        })
+        .transform(babelify, {
+            presets: ['@babel/env']
+        })
+        .bundle()
+        .on('error', notify.onError())
+        .pipe(source('main.js'))
+        .pipe(buffer())
+        .pipe(gulpIf(isDevelopment, sourcemaps.init({loadMaps: true})))
+        .pipe(gulpIf(isProduction, uglify()))
+        .pipe(gulpIf(isDevelopment, sourcemaps.write('./')))
+        .pipe(gulp.dest('build/js'));
     });
 //CLEAN
     gulp.task('clean', function(){
