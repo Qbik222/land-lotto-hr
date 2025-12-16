@@ -1,13 +1,13 @@
 $blue: #000055
 $white: #ffffff
 $magenta: #FF267E
-$green: #3AFFC3
+$green: #05C489
 $black: #1B1B1F
 $dark: #0D1225
 
-$font-primary: FavbetDisplay, sans-serif
-$font-display: LilitaOne, sans-serif
-$font-secondary: RobotoCondensed, sans-serif
+$font-favbet-display: FavbetDisplay, sans-serif
+$font-lilita-one: LilitaOne, sans-serif
+$font-roboto-condensed: RobotoCondensed, sans-serif
 
 .hide
   display: none !important
@@ -34,6 +34,30 @@ $font-secondary: RobotoCondensed, sans-serif
     pointer-events: auto !important
     visibility: visible !important
 
+
+.btn
+  width: 100%
+  max-width: 540px
+  padding: 28px 54px
+  background: $green
+  color: $black
+  border: none
+  border-radius: 20px
+  font-family: $font-roboto-condensed
+  font-size: 48px
+  text-transform: uppercase
+  cursor: pointer
+  transition: all 0.3s ease
+  box-shadow: 0 4px 15px rgba(58, 255, 195, 0.3)
+
+  &:hover
+    background: lighten($green, 5%)
+    transform: translateY(-2px)
+    box-shadow: 0 6px 20px rgba(58, 255, 195, 0.4)
+
+  &:active
+    transform: translateY(0)
+
 body
   overscroll-behavior: none
   -webkit-tap-highlight-color: transparent
@@ -42,21 +66,47 @@ body
     max-width: 100%
     height: auto
 .land
-  height: calc(100% - 83px)
   position: relative
   background: $dark
+  display: flex
+  align-items: center
+  height: 100%
+  padding-left: 80px
+  overflow: hidden
   &__logo
-    position: absolute
-    top: 0
-    left: 0
-    max-width: 300px
+    max-width: 740px
   &__game
+    position: relative
+    z-index: 1
+
+    &::before
+      content: ""
+      width: 2150px
+      height: 2255px
+      background: url("../img/bg.png") no-repeat 0 0/cover
+      background-size: 100% 100%
+      position: absolute
+      left: 34%
+      top: 50%
+      transform: translate(-50%, -50%)
+      z-index: 0
+    &::after
+      content: ""
+      position: fixed
+      bottom: 0
+      left: 0
+      width: 100vw
+      height: 20%
+      z-index: 1
+      background: linear-gradient(180deg, rgba(13, 18, 37, 0.00) 0%, #0D1225 72.2%)
     #gameGlass
+      z-index: 1
       width: 760px
       height: 760px
       max-width: 100vw
       max-height: 100vw
       overflow: hidden
+      position: relative
       background-image: url('../img/glass.png')
       background-size: cover
       background-position: center
@@ -66,7 +116,74 @@ body
         height: 100vw
       @media (max-width: 600px)
         background-image: url('../img/glass-mob.png')
-
+  &__left
+    max-width: 740px
+    min-width: 740px
+    margin-right: -200px
+    z-index: 3
+  &__title
+    display: flex
+    flex-direction: column
+    justify-content: center
+    margin-top: 80px
+    &-item
+      color: $white
+      font-family: $font-favbet-display
+      text-transform: uppercase
+      &:nth-child(1)
+        font-size: 140px
+        line-height: 140px
+      &:nth-child(2)
+        font-size: 200px
+        line-height: 200px
+        margin: -15px 0
+      &:nth-child(3)
+        font-size: 60px
+        line-height: 60px
+  &__subtitle
+    color: $white
+    background: url("../img/text-bg.png") no-repeat 0 0/cover
+    background-size: 100% 100%
+    font-size: 65px
+    width: fit-content
+    font-family: $font-favbet-display
+    padding: 10px 60px
+    margin-top: 40px
+  &__char
+    position: relative
+    z-index: 2
+    max-width: 720px
+    min-width: 720px
+    margin-left: -200px
+    &::before
+      content: ""
+      position: fixed
+      bottom: 0
+      left: 0
+      width: 100vw
+      height: 20%
+      z-index: 1
+      background: linear-gradient(180deg, rgba(13, 18, 37, 0.00) 0%, #0D1225 72.2%)
+    &-img
+      position: relative
+      z-index: 2
+    &-bubble
+      position: absolute
+      top: 35px
+      color: #1C3E82
+      padding: 60px 34px 118px 28px
+      left: -20px
+      width: 370px
+      height: 320px
+      background: url("../img/bubble.png") no-repeat 0 0/cover
+      background-size: 100% 100%
+      z-index: 0
+      font-size: 42px
+      text-transform: uppercase
+      text-align: center
+      font-family: $font-favbet-display
+  &__btn
+    margin-top: 70px
 .menu-btn
   position: fixed
   top: 20px
@@ -76,7 +193,7 @@ body
   color: $white
   border: none
   border-radius: 8px
-  font-family: $font-primary
+  font-family: $font-favbet-display
   font-size: 16px
   cursor: pointer
   z-index: 1001
@@ -105,7 +222,7 @@ body
     padding: 10px 16px
     border: none
     border-radius: 8px
-    font-family: $font-primary
+    font-family: $font-favbet-display
     font-size: 14px
     cursor: pointer
     transition: all 0.2s ease
@@ -162,8 +279,8 @@ body
   position: relative
   background: linear-gradient(135deg, #1a1a3e 0%, #2d1b4e 100%)
   border-radius: 20px
-  padding: 40px 50px
-  max-width: 600px
+  padding: 80px 50px
+  max-width: 970px
   width: 90%
   max-height: 90vh
   overflow-y: auto
@@ -171,7 +288,7 @@ body
   transform: scale(0.8)
   opacity: 0
   transition: transform 0.3s ease, opacity 0.3s ease
-  z-index: 10000
+  z-index: 10
   display: none
   @media (max-width: 600px)
     padding: 30px 25px
@@ -183,7 +300,12 @@ body
   
   .overlay.show &
     display: block
-  
+
+  &__btn
+    max-width: 390px
+    font-size: 37px
+    margin: 0 auto
+    display: block
   &__close
     position: absolute
     top: 20px
@@ -191,7 +313,7 @@ body
     width: 32px
     height: 32px
     cursor: pointer
-    z-index: 10001
+    z-index: 10
     transition: transform 0.2s ease
     &:hover
       transform: scale(1.1)
@@ -209,35 +331,30 @@ body
       transform: translate(-50%, -50%) rotate(-45deg)
   
   &__title
-    font-family: $font-primary
-    font-size: 32px
+    font-family: $font-favbet-display
+    font-size: 48px
     color: $white
     text-align: center
     text-transform: uppercase
     margin-bottom: 20px
     line-height: 1.2
-    @media (max-width: 600px)
-      font-size: 24px
-      margin-bottom: 15px
+    text-shadow: 0 0 33.288px #2A0C6C
   
   &__prize
-    font-family: $font-primary
-    font-size: 64px
+    font-family: $font-favbet-display
+    font-size: 88px
     color: $white
     text-align: center
     text-transform: uppercase
     margin-bottom: 30px
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5)
+    text-shadow: 0 0 47.217px #D2BEFF
     line-height: 1
-    @media (max-width: 600px)
-      font-size: 48px
-      margin-bottom: 20px
   
   &__icon
     position: relative
-    width: 200px
-    height: 200px
-    margin: 0 auto 30px
+    width: 468px
+    height: 468px
+    margin: -50px auto 0
     display: flex
     align-items: center
     justify-content: center
@@ -258,7 +375,7 @@ body
       background: linear-gradient(135deg, #FF267E 0%, #9B2FAE 100%)
       padding: 12px 20px
       border-radius: 10px
-      font-family: $font-primary
+      font-family: $font-favbet-display
       font-size: 28px
       color: $white
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3)
@@ -271,48 +388,18 @@ body
         right: -15px
   
   &__text
-    font-family: $font-secondary
-    font-size: 18px
+    font-family: $font-roboto-condensed
+    font-size: 32px
     color: $white
     text-align: center
     margin-bottom: 30px
-    line-height: 1.5
-    @media (max-width: 600px)
-      font-size: 16px
-      margin-bottom: 20px
-    
     span
       color: #FFD700
       font-weight: bold
   
-  &__btn
-    width: 100%
-    padding: 18px 30px
-    background: $green
-    color: $black
-    border: none
-    border-radius: 12px
-    font-family: $font-primary
-    font-size: 18px
-    text-transform: uppercase
-    cursor: pointer
-    transition: all 0.3s ease
-    box-shadow: 0 4px 15px rgba(58, 255, 195, 0.3)
-    @media (max-width: 600px)
-      padding: 15px 25px
-      font-size: 16px
-    
-    &:hover
-      background: lighten($green, 5%)
-      transform: translateY(-2px)
-      box-shadow: 0 6px 20px rgba(58, 255, 195, 0.4)
-    
-    &:active
-      transform: translateY(0)
-  
   &__bottom
     margin-top: 20px
-    font-family: $font-secondary
+    font-family: $font-roboto-condensed
     font-size: 12px
     color: rgba(255, 255, 255, 0.7)
     text-align: left
