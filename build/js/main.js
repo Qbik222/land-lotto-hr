@@ -30,6 +30,11 @@ function initGameGlass() {
     z: 0
   }; // Вітер дме знизу вгору (по Y)
 
+  // Стан великої кульки "WIN"
+  var winBall = null;
+  var winBallFadeInStartTime = null;
+  var winBallFadeInDuration = 1500; // Тривалість fade-in в мілісекундах (1.5 секунди)
+
   // Three.js setup
   var scene = new THREE.Scene();
   scene.background = null; // Прозорий фон
@@ -139,6 +144,71 @@ function initGameGlass() {
     var texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
     return texture;
+  }
+
+  // Функція для створення текстури з текстом "WIN"
+  function createWinTexture() {
+    var canvas = document.createElement('canvas');
+    var size = 512;
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+
+    // Білий фон
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+
+    // Текст "WIN"
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 120px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('WIN', size / 2, size / 2);
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  // Функція для створення великої кульки "WIN" в центрі
+  function createWinBall() {
+    // Видаляємо всі існуючі кульки зі сцени
+    for (var i = 0; i < balls.length; i++) {
+      var ball = balls[i];
+      scene.remove(ball.mesh);
+      // Звільняємо текстуру та матеріал
+      if (ball.mesh.material.map) {
+        ball.mesh.material.map.dispose();
+      }
+      ball.mesh.material.dispose();
+    }
+    // Очищаємо масив
+    balls.length = 0;
+
+    // Створюємо велику кульку (85% від радіусу контейнера)
+    var winBallRadius = containerRadius * 0.85;
+    var winGeometry = new THREE.SphereGeometry(winBallRadius, 64, 64);
+    var winTexture = createWinTexture();
+    var winMaterial = new THREE.MeshStandardMaterial({
+      map: winTexture,
+      color: 0xffffff,
+      roughness: 0.3,
+      metalness: 0.0,
+      side: THREE.FrontSide // Рендеримо тільки зовнішню сторону
+    });
+
+    var winMesh = new THREE.Mesh(winGeometry, winMaterial);
+    winMesh.position.set(0, 0, 0); // Чітко по центру сфери
+    winMesh.scale.set(0.01, 0.01, 0.01); // Починаємо з мінімального розміру (майже невидима)
+    winMesh.castShadow = true;
+    winMesh.receiveShadow = true;
+    winMesh.visible = true;
+
+    // Додаємо кульку до сцени
+    scene.add(winMesh);
+
+    // Запускаємо анімацію появи (scale animation)
+    winBallFadeInStartTime = performance.now();
+    return winMesh;
   }
 
   // Геометрія для кульок (спільна для всіх)
@@ -258,6 +328,35 @@ function initGameGlass() {
     var maxSafeRadius = containerRadius - ballRadius - 0.1; // Безпечний радіус з невеликим запасом
     var bottomThreshold = ballRadius * 1.5; // Поріг для визначення "на дні" (нижня частина сфери)
 
+    // Оновлення анімації появи (scale) для великої кульки "WIN"
+    if (winBall !== null && winBallFadeInStartTime !== null) {
+      var currentTime = performance.now();
+      var elapsed = currentTime - winBallFadeInStartTime;
+      var progress = Math.min(1, elapsed / winBallFadeInDuration);
+
+      // Використовуємо easeOutElastic для пружинного ефекту (як кулька "вистрибує")
+      var easedProgress;
+      if (progress === 0) {
+        easedProgress = 0;
+      } else if (progress === 1) {
+        easedProgress = 1;
+      } else {
+        // easeOutBack - невеликий "перестріл" і повернення
+        var c1 = 1.70158;
+        var c3 = c1 + 1;
+        easedProgress = 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
+      }
+
+      // Плавно збільшуємо масштаб від 0.01 до 1
+      var newScale = 0.01 + easedProgress * 0.99;
+      winBall.scale.set(newScale, newScale, newScale);
+
+      // Якщо анімація завершена
+      if (progress >= 1) {
+        winBall.scale.set(1, 1, 1);
+        winBallFadeInStartTime = null;
+      }
+    }
     for (var _i = 0; _i < balls.length; _i++) {
       var ball = balls[_i];
 
@@ -638,7 +737,16 @@ function initGameGlass() {
   // Запуск анімації
   requestAnimationFrame(animate);
 
-  // Повертаємо функцію для керування вітром
+  // Функція для створення великої кульки "WIN"
+  function showWinBall() {
+    // Якщо кулька вже існує, не створюємо нову
+    if (winBall !== null) {
+      return;
+    }
+    winBall = createWinBall();
+  }
+
+  // Повертаємо функції для керування
   return {
     toggleWind: function toggleWind() {
       windActive = !windActive;
@@ -646,7 +754,8 @@ function initGameGlass() {
     },
     isWindActive: function isWindActive() {
       return windActive;
-    }
+    },
+    showWinBall: showWinBall
   };
 }
 
@@ -760,6 +869,14 @@ if (windToggleBtn && windController) {
     var isActive = windController.toggleWind();
     windToggleBtn.textContent = isActive ? 'Виключити вітер' : 'Тест вітру';
     windToggleBtn.style.background = isActive ? '#3AFFC3' : '#FF267E';
+  });
+}
+
+// Кнопка для показу великої кульки "WIN"
+var showWinBallBtn = document.getElementById('showWinBallBtn');
+if (showWinBallBtn && windController && windController.showWinBall) {
+  showWinBallBtn.addEventListener('click', function () {
+    windController.showWinBall();
   });
 }
 
