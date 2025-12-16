@@ -9,35 +9,6 @@ const isLowPowerDevice = isMobile && (navigator.hardwareConcurrency <= 4 || wind
 // Кеш текстур чисел (10-99)
 const numberTextureCache = new Map();
 
-// Спільний canvas для генерації текстур (вирішує проблему ліміту canvas на iOS)
-let sharedCanvas = null;
-let sharedCtx = null;
-let sharedCanvasSize = 0;
-
-function getSharedCanvas(size) {
-  // Створюємо canvas якщо ще не існує
-  if (!sharedCanvas) {
-    sharedCanvas = document.createElement('canvas');
-  }
-  
-  // При зміні розміру потрібно перестворити контекст
-  const sizeChanged = sharedCanvasSize !== size;
-  if (sizeChanged) {
-    sharedCanvas.width = size;
-    sharedCanvas.height = size;
-    sharedCanvasSize = size;
-    // Контекст стає недійсним при зміні розміру - отримуємо заново
-    sharedCtx = sharedCanvas.getContext('2d', { willReadFrequently: true });
-  }
-  
-  // Повністю очищаємо canvas
-  if (sharedCtx) {
-    sharedCtx.setTransform(1, 0, 0, 1, 0, 0); // Скидаємо трансформації
-    sharedCtx.clearRect(0, 0, size, size);
-  }
-  
-  return { canvas: sharedCanvas, ctx: sharedCtx };
-}
 
 // Ініціалізація сцени та отримання контролеру вітру
 const windController = initGameGlass();
@@ -164,7 +135,8 @@ function initGameGlass() {
   // X, Z - горизонтальна площина, Y - вертикальна вісь (вгору/вниз)
   const maxSafeRadius = containerRadius - ballRadius; // Максимальна відстань від центру для кульки
 
-  // Функція для створення текстури з числом (з кешуванням та спільним canvas)
+  // Функція для створення текстури з числом (з кешуванням)
+  // Використовуємо окремий canvas для кожної текстури - це надійніше на iOS
   function createNumberTexture(number) {
     // Перевіряємо кеш
     if (numberTextureCache.has(number)) {
@@ -173,16 +145,21 @@ function initGameGlass() {
     
     try {
       const size = isMobile ? 256 : 512;
-      const { canvas, ctx } = getSharedCanvas(size);
+      
+      // Створюємо окремий canvas для цієї текстури
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
       
       if (!ctx) {
         console.error('Canvas 2D context is not available');
-        // Створюємо простий DataTexture як fallback
-        const data = new Uint8Array(size * size * 4).fill(255);
-        const texture = new THREE.DataTexture(data, size, size);
-        texture.needsUpdate = true;
-        numberTextureCache.set(number, texture);
-        return texture;
+        const fallbackTexture = new THREE.DataTexture(
+          new Uint8Array(size * size * 4).fill(255), size, size, THREE.RGBAFormat
+        );
+        fallbackTexture.needsUpdate = true;
+        numberTextureCache.set(number, fallbackTexture);
+        return fallbackTexture;
       }
       
       // Білий фон
@@ -197,21 +174,8 @@ function initGameGlass() {
       ctx.textBaseline = 'middle';
       ctx.fillText(number.toString(), size / 2, size / 2);
       
-      // Отримуємо дані і перевертаємо по вертикалі (для Three.js)
-      const imageData = ctx.getImageData(0, 0, size, size);
-      const flippedData = new Uint8Array(size * size * 4);
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          const srcIdx = (y * size + x) * 4;
-          const dstIdx = ((size - 1 - y) * size + x) * 4;
-          flippedData[dstIdx] = imageData.data[srcIdx];
-          flippedData[dstIdx + 1] = imageData.data[srcIdx + 1];
-          flippedData[dstIdx + 2] = imageData.data[srcIdx + 2];
-          flippedData[dstIdx + 3] = imageData.data[srcIdx + 3];
-        }
-      }
-      
-      const texture = new THREE.DataTexture(flippedData, size, size, THREE.RGBAFormat);
+      // Використовуємо CanvasTexture - надійніше на iOS
+      const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
       
       // Зберігаємо в кеш
@@ -221,11 +185,11 @@ function initGameGlass() {
     } catch (error) {
       console.error('Error creating number texture:', error);
       const size = isMobile ? 256 : 512;
-      // Fallback: біла текстура
-      const data = new Uint8Array(size * size * 4).fill(255);
-      const texture = new THREE.DataTexture(data, size, size);
-      texture.needsUpdate = true;
-      return texture;
+      const fallbackTexture = new THREE.DataTexture(
+        new Uint8Array(size * size * 4).fill(255), size, size, THREE.RGBAFormat
+      );
+      fallbackTexture.needsUpdate = true;
+      return fallbackTexture;
     }
   }
 
@@ -234,17 +198,22 @@ function initGameGlass() {
     try {
       // Адаптивний розмір текстури
       const size = isMobile ? 512 : 1024;
-      const { canvas, ctx } = getSharedCanvas(size);
+      
+      // Створюємо окремий canvas для WIN текстури
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
       
       if (!ctx) {
         console.error('Canvas 2D context is not available');
         // Fallback: фіолетова текстура
         const data = new Uint8Array(size * size * 4);
         for (let i = 0; i < size * size; i++) {
-          data[i * 4] = 139;     // R
-          data[i * 4 + 1] = 92;  // G
-          data[i * 4 + 2] = 246; // B
-          data[i * 4 + 3] = 255; // A
+          data[i * 4] = 139;
+          data[i * 4 + 1] = 92;
+          data[i * 4 + 2] = 246;
+          data[i * 4 + 3] = 255;
         }
         const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
         texture.needsUpdate = true;
@@ -306,21 +275,8 @@ function initGameGlass() {
       ctx.textBaseline = 'middle';
       ctx.fillText('WIN', centerX, centerY);
       
-      // Отримуємо дані і перевертаємо по вертикалі (для Three.js)
-      const imageData = ctx.getImageData(0, 0, size, size);
-      const flippedData = new Uint8Array(size * size * 4);
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          const srcIdx = (y * size + x) * 4;
-          const dstIdx = ((size - 1 - y) * size + x) * 4;
-          flippedData[dstIdx] = imageData.data[srcIdx];
-          flippedData[dstIdx + 1] = imageData.data[srcIdx + 1];
-          flippedData[dstIdx + 2] = imageData.data[srcIdx + 2];
-          flippedData[dstIdx + 3] = imageData.data[srcIdx + 3];
-        }
-      }
-      
-      const texture = new THREE.DataTexture(flippedData, size, size, THREE.RGBAFormat);
+      // Використовуємо CanvasTexture - надійніше на iOS
+      const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
       return texture;
     } catch (error) {
