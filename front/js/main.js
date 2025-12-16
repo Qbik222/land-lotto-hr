@@ -1051,6 +1051,7 @@ function initGameGlass() {
   // Функція для скидання сцени до дефолтного стану
   function resetScene() {
     // Видаляємо winBall якщо існує
+     console.log('resetScene');
     if (winBall !== null) {
       scene.remove(winBall);
       if (winBall.material.map) {
