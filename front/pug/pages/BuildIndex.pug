@@ -1,3 +1,9 @@
+button.menu-btn menu
+.menu-test.hide
+    button#windToggleBtn.wind-toggle-btn Тест трясяння кульок
+    button.popup-test-btn(data-popup="winPopup") Показати попап 1 (3000 €)
+    button.popup-test-btn(data-popup="winPopup2") Показати попап 2 (500 FS)
+    button.popup-test-btn-close Закрити всі попапи
 .land
     .land__left
         .land__logo
@@ -16,6 +22,7 @@
             source(media="(max-width: 1050px)" srcset="img/char-tab.png")
             img(src="img/char.png" alt="favet")
         .land__char-bubble Tvoj trenutak sreće počinje ovdje!
+
 .overlay._opacity
     .popup(data-popup="winPopup")
         .popup__close

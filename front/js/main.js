@@ -2,6 +2,9 @@
 
 import * as THREE from 'three';
 
+// Ініціалізація сцени та отримання контролеру вітру
+const windController = initGameGlass();
+
 // Game Glass 3D Scene (Three.js)
 function initGameGlass() {
   const canvas = document.getElementById('gameGlass');
@@ -10,9 +13,15 @@ function initGameGlass() {
   // Розміри відповідають видимій синій області на фоні (glass.png)
   // Синя область менша за розмір канвасу через відступи
   const containerRadius = 330; // Радіус сфери контейнера (підігнано під фон)
-  const ballRadius = 45; // ~90px diameter
-  const ballCount = 40; // Кількість кульок
+  const ballRadius = 35; // ~90px diameter
+  const ballCount = 80; // Кількість кульок
   const balls = [];
+  
+  // Стан анімації вітру
+  let windActive = false;
+  const windStrength = 2.5; // Сила вітру
+  const windStreamRadius = 80; // Радіус струї вітру (тонка струя з центру)
+  const windDirection = { x: 0, y: 1, z: 0 }; // Вітер дме знизу вгору (по Y)
 
   // Three.js setup
   const scene = new THREE.Scene();
@@ -222,7 +231,14 @@ function initGameGlass() {
       z: z,
       vx: vx,
       vy: vy,
-      vz: vz
+      vz: vz,
+      // Кутові швидкості для обертання навколо осей
+      rotX: 0,
+      rotY: 0,
+      rotZ: 0,
+      // Відстеження попереднього стану для визначення моменту приземлення
+      wasOnBottom: false,
+      previousVy: vy
     });
   }
 
@@ -245,22 +261,113 @@ function initGameGlass() {
       const distanceFromCenter = Math.sqrt(ball.x * ball.x + ball.y * ball.y + ball.z * ball.z);
       const isOnBottom = ball.y < -containerRadius * 0.3 && distanceFromCenter > containerRadius * 0.7;
       
-      // Гравітація до низу канвасу (по осі Y вниз) - тільки якщо кулька не на дні
-      if (!isOnBottom) {
-        ball.vy -= gravity * deltaTime;
-      } else {
-        // Якщо кулька на дні - не застосовуємо гравітацію і застосовуємо сильне тертя
-        const bottomFriction = 0.7; // Дуже сильне тертя для кульок на дні
-        ball.vx *= bottomFriction;
-        ball.vy *= bottomFriction;
-        ball.vz *= bottomFriction;
+      // Визначення моменту приземлення (кулька тільки що досягла дна)
+      const justLanded = isOnBottom && !ball.wasOnBottom && ball.previousVy < 0;
+      
+      // Застосування вітру (якщо активний)
+      if (windActive) {
+        // Вітер дме тонкою струєю з центру низу до центру верху
+        // Обчислюємо відстань від центру в XZ площині (горизонтальна відстань)
+        const distanceFromCenterXZ = Math.sqrt(ball.x * ball.x + ball.z * ball.z);
         
-        // Якщо швидкість дуже мала - повністю зупиняємо
-        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
-        if (speed < 0.05) {
-          ball.vx = 0;
-          ball.vy = 0;
-          ball.vz = 0;
+        // Інтенсивність вітру залежить від відстані від центру - чим ближче до центру, тим сильніше
+        // Використовуємо гаусову функцію для плавного спаду сили вітру від центру
+        const distanceNormalized = distanceFromCenterXZ / windStreamRadius;
+        const windIntensityXZ = Math.max(0, Math.exp(-distanceNormalized * distanceNormalized * 2));
+        
+        // Також сила вітру залежить від вертикальної позиції - сильніша внизу, слабша вгорі
+        const windIntensityY = Math.max(0, 1 - (ball.y + containerRadius) / (containerRadius * 2));
+        
+        // Комбінована інтенсивність вітру
+        const windIntensity = windIntensityXZ * windIntensityY;
+        
+        // Вітер дме строго вгору (по Y), без горизонтального розкидання
+        const windForceY = windDirection.y * windStrength * windIntensity;
+        
+        // Нормалізована висота кульки (0 = низ, 1 = верх)
+        const normalizedHeight = (ball.y + containerRadius) / (containerRadius * 2);
+        
+        // Додаткова сила, яка притягує кульки до центру струї (якщо вони не в центрі)
+        // Це створює ефект, що кульки збираються до центру струї
+        // Але тільки в нижній частині сфери
+        if (distanceFromCenterXZ > 0.1 && normalizedHeight < 0.6) {
+          const pullToCenterStrength = 0.3 * windIntensityY; // Сила притягання до центру
+          const pullX = (-ball.x / distanceFromCenterXZ) * pullToCenterStrength;
+          const pullZ = (-ball.z / distanceFromCenterXZ) * pullToCenterStrength;
+          
+          ball.vx += pullX * deltaTime;
+          ball.vz += pullZ * deltaTime;
+        }
+        
+        // Заокруглення вітру біля верху сфери
+        // Коли кулька наближається до верху, вітер починає розходитися в сторони
+        if (normalizedHeight > 0.5 && distanceFromCenterXZ > 0.1) {
+          // Сила розходження збільшується з висотою
+          const spreadIntensity = Math.pow((normalizedHeight - 0.5) * 2, 2); // Квадратична залежність для плавності
+          
+          // Напрямок від центру (відхилення від центру)
+          const spreadDirectionX = ball.x / distanceFromCenterXZ;
+          const spreadDirectionZ = ball.z / distanceFromCenterXZ;
+          
+          // Сила розходження залежить від інтенсивності вітру та висоти
+          const spreadStrength = windIntensity * spreadIntensity * 1.5;
+          
+          // Застосовуємо силу розходження
+          ball.vx += spreadDirectionX * spreadStrength * deltaTime;
+          ball.vz += spreadDirectionZ * spreadStrength * deltaTime;
+          
+          // Зменшуємо вертикальну силу вітру вгорі для плавного переходу
+          const verticalReduction = 1 - spreadIntensity * 0.5;
+          ball.vy += windForceY * verticalReduction * deltaTime;
+        } else {
+          // Застосовуємо силу вітру строго вгору (в нижній та середній частині)
+          ball.vy += windForceY * deltaTime;
+        }
+      }
+      
+      // Гравітація до низу канвасу (по осі Y вниз) - тільки якщо кулька не на дні і вітер не активний
+      if (!isOnBottom && !windActive) {
+        ball.vy -= gravity * deltaTime;
+      } else if (!isOnBottom && windActive) {
+        // Якщо вітер активний, гравітація слабша
+        ball.vy -= gravity * 0.3 * deltaTime;
+      } else {
+        // Якщо кулька на дні - не застосовуємо гравітацію
+        // Застосовуємо сильне тертя тільки якщо вітер не активний
+        if (!windActive) {
+          const bottomFriction = 0.7; // Дуже сильне тертя для кульок на дні
+          ball.vx *= bottomFriction;
+          ball.vy *= bottomFriction;
+          ball.vz *= bottomFriction;
+          
+          // Резке зменшення обертання в момент приземлення
+          if (justLanded) {
+            const landingRotationDamping = 0.3; // Сильне зменшення обертання при приземленні
+            ball.rotX *= landingRotationDamping;
+            ball.rotY *= landingRotationDamping;
+            ball.rotZ *= landingRotationDamping;
+          } else {
+            // Постійне зменшення обертання на дні (тертя об поверхню)
+            const rotationFriction = 0.85; // Тертя для обертання на дні
+            ball.rotX *= rotationFriction;
+            ball.rotY *= rotationFriction;
+            ball.rotZ *= rotationFriction;
+          }
+          
+          // Якщо швидкість дуже мала - повністю зупиняємо
+          const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
+          if (speed < 0.05) {
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.vz = 0;
+            // Також зупиняємо обертання, якщо кулька повністю зупинилася
+            const rotationSpeed = Math.sqrt(ball.rotX * ball.rotX + ball.rotY * ball.rotY + ball.rotZ * ball.rotZ);
+            if (rotationSpeed < 0.01) {
+              ball.rotX = 0;
+              ball.rotY = 0;
+              ball.rotZ = 0;
+            }
+          }
         }
       }
 
@@ -441,15 +548,69 @@ function initGameGlass() {
         }
       }
 
-      // Застосувати згасання (тільки якщо кулька не на дні)
-      if (!isOnBottom) {
+      // Застосувати згасання (тільки якщо кулька не на дні або вітер активний)
+      if (!isOnBottom || windActive) {
         ball.vx *= damping;
         ball.vy *= damping;
         ball.vz *= damping;
       }
 
-      // Оновити позицію меша в Three.js
+      // Обчислення кутової швидкості на основі лінійної швидкості
+      // Для сфери, що котиться: кутова швидкість = лінійна швидкість / радіус
+      // Обертання навколо різних осей залежить від напрямку руху
+      const linearSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
+      
+      if (linearSpeed > 0.001) {
+        // Кутова швидкість навколо кожної осі залежить від напрямку руху
+        // Для сфери, що котиться без ковзання:
+        // - Рух по X обертає навколо Z та Y
+        // - Рух по Y обертає навколо X та Z
+        // - Рух по Z обертає навколо Y та X
+        const angularSpeed = linearSpeed / ballRadius; // Радіани на секунду
+        
+        // Обертання навколо осі X (пропорційно до руху по Y та Z)
+        // Використовуємо векторний добуток для правильного напрямку обертання
+        const rotXSpeed = (ball.vz - ball.vy * 0.3) / ballRadius;
+        
+        // Обертання навколо осі Y (пропорційно до руху по X та Z)
+        const rotYSpeed = (ball.vx - ball.vz * 0.3) / ballRadius;
+        
+        // Обертання навколо осі Z (пропорційно до руху по X та Y)
+        const rotZSpeed = (ball.vy - ball.vx * 0.3) / ballRadius;
+        
+        // Оновлюємо кути обертання
+        ball.rotX += rotXSpeed * deltaTime;
+        ball.rotY += rotYSpeed * deltaTime;
+        ball.rotZ += rotZSpeed * deltaTime;
+        
+        // Застосувати згасання до кутової швидкості
+        if (!isOnBottom || windActive) {
+          ball.rotX *= damping;
+          ball.rotY *= damping;
+          ball.rotZ *= damping;
+        } else {
+          // Якщо кулька на дні і вітер не активний - сильніше згасання обертання
+          const bottomRotationDamping = 0.85; // Сильніше згасання обертання на дні
+          ball.rotX *= bottomRotationDamping;
+          ball.rotY *= bottomRotationDamping;
+          ball.rotZ *= bottomRotationDamping;
+        }
+      } else {
+        // Якщо кулька майже не рухається, зменшуємо обертання
+        ball.rotX *= 0.95;
+        ball.rotY *= 0.95;
+        ball.rotZ *= 0.95;
+      }
+      
+      // Оновити стан для наступного кадру
+      ball.wasOnBottom = isOnBottom;
+      ball.previousVy = ball.vy;
+
+      // Оновити позицію та обертання меша в Three.js
       ball.mesh.position.set(ball.x, ball.y, ball.z);
+      ball.mesh.rotation.x = ball.rotX;
+      ball.mesh.rotation.y = ball.rotY;
+      ball.mesh.rotation.z = ball.rotZ;
     }
   }
 
@@ -478,7 +639,159 @@ function initGameGlass() {
 
   // Запуск анімації
   requestAnimationFrame(animate);
+  
+  // Повертаємо функцію для керування вітром
+  return {
+    toggleWind: () => {
+      windActive = !windActive;
+      return windActive;
+    },
+    isWindActive: () => windActive
+  };
 }
 
-// Виклик функції ініціалізації канви
-initGameGlass();
+
+
+
+// Popup functions
+function openPopupByAttr(popupAttr, amount = null, currency = '€') {
+    const overlay = document.querySelector('.overlay');
+    const allPopups = document.querySelectorAll('.popup');
+    
+    if (!overlay) return;
+    
+    // Ховаємо всі попапи
+    allPopups.forEach(p => {
+        p.classList.remove('show');
+        p.style.display = 'none';
+    });
+    
+    // Блокуємо скрол
+    document.body.style.overflow = 'hidden';
+    
+    // Показуємо оверлей (прибираємо клас _opacity та додаємо show)
+    overlay.classList.remove('_opacity');
+    overlay.classList.add('show');
+    
+    // Знаходимо потрібний попап
+    const targetPopup = document.querySelector(`.popup[data-popup="${popupAttr}"]`);
+    if (targetPopup) {
+        // Оновлюємо значення виграшу якщо передано
+        if (amount !== null) {
+            const prizeElement = targetPopup.querySelector('.popup__prize');
+            if (prizeElement) {
+                prizeElement.textContent = `${amount} ${currency}`;
+            }
+        }
+        
+        // Показуємо попап
+        targetPopup.style.display = 'block';
+        // Невелика затримка для анімації
+        setTimeout(() => {
+            targetPopup.classList.add('show');
+        }, 10);
+    }
+}
+
+function closeAllPopups() {
+    const overlay = document.querySelector('.overlay');
+    const allPopups = document.querySelectorAll('.popup');
+    
+    if (!overlay) return;
+    
+    // Ховаємо всі попапи (прибираємо show для анімації)
+    allPopups.forEach(p => {
+        p.classList.remove('show');
+    });
+    
+    // Ховаємо оверлей після завершення анімації попапу
+    setTimeout(() => {
+        overlay.classList.remove('show');
+        overlay.classList.add('_opacity');
+        allPopups.forEach(p => {
+            p.style.display = 'none';
+        });
+        // Відновлюємо скрол
+        document.body.style.overflow = 'auto';
+    }, 300); // Час анімації
+}
+
+// Ініціалізація обробників попапів
+function initPopups() {
+    const overlay = document.querySelector('.overlay');
+    if (!overlay) return;
+
+    // Закриття по кліку на кнопку закриття
+    document.querySelectorAll('.popup__close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAllPopups();
+        });
+    });
+
+    // Закриття по кліку на оверлей (тільки якщо клік не на самому попапі)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay || overlay.classList.contains('show')) {
+            const openPopup = document.querySelector('.popup.show');
+            if (openPopup && !openPopup.contains(e.target)) {
+                closeAllPopups();
+            }
+        }
+    });
+
+    // Закриття по Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) {
+            closeAllPopups();
+        }
+    });
+}
+initPopups();
+
+
+// Тестове меню
+const menuBtn = document.querySelector(".menu-btn");
+const menuTest = document.querySelector(".menu-test");
+
+if (menuBtn && menuTest) {
+    menuBtn.addEventListener("click", () => {
+        menuTest.classList.toggle("hide");
+    });
+}
+
+// Кнопка для вмикання/вимикання вітру
+const windToggleBtn = document.getElementById('windToggleBtn');
+if (windToggleBtn && windController) {
+  windToggleBtn.addEventListener('click', () => {
+    const isActive = windController.toggleWind();
+    windToggleBtn.textContent = isActive ? 'Виключити вітер' : 'Тест вітру';
+    windToggleBtn.style.background = isActive ? '#3AFFC3' : '#FF267E';
+  });
+}
+
+// Кнопки для тестування попапів
+const popupTestButtons = document.querySelectorAll('.popup-test-btn');
+popupTestButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const popupAttr = btn.getAttribute('data-popup');
+        if (popupAttr) {
+            // Визначаємо значення залежно від попапу
+            if (popupAttr === 'winPopup') {
+                openPopupByAttr('winPopup', 3000, '€');
+            } else if (popupAttr === 'winPopup2') {
+                openPopupByAttr('winPopup2', 500, 'FS');
+            } else {
+                openPopupByAttr(popupAttr);
+            }
+        }
+    });
+});
+
+// Кнопка закриття всіх попапів
+const popupCloseBtn = document.querySelector('.popup-test-btn-close');
+if (popupCloseBtn) {
+    popupCloseBtn.addEventListener('click', () => {
+        closeAllPopups();
+    });
+}
+
