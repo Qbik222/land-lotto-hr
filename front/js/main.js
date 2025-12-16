@@ -943,7 +943,7 @@ function initGameGlass() {
     renderer.render(scene, camera);
     
     // Створюємо кульки після 3-го чистого кадру для уникнення артефактів на iOS
-    if (!ballsCreated && frameCount >= 5) {
+    if (!ballsCreated && frameCount >= 10) {
         console.log(frameCount)
       createInitialBalls();
     }
