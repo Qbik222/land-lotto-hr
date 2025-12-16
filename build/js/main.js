@@ -225,6 +225,9 @@ function initGameGlass() {
       }
       var centerX = size / 2;
       var centerY = size / 2;
+
+      // Коефіцієнт масштабування відносно базового розміру 1024px
+      var scale = size / 1024;
       var gradient = ctx.createLinearGradient(0, 0, size, size);
       gradient.addColorStop(0, '#1e1b4b');
       gradient.addColorStop(0.25, '#4f46e5');
@@ -252,16 +255,16 @@ function initGameGlass() {
         }
       };
 
-      // Зовнішня біла обводка
-      drawEllipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18);
+      // Зовнішня біла обводка (масштабовані значення)
+      drawEllipse(centerX, centerY, circleRadiusX + 12 * scale, circleRadiusY + 18 * scale);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 6 * scale;
       ctx.stroke();
 
       // Ще одна зовнішня обводка (тонша)
-      drawEllipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28);
+      drawEllipse(centerX, centerY, circleRadiusX + 20 * scale, circleRadiusY + 28 * scale);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 * scale;
       ctx.stroke();
 
       // Білий еліпс (заливка)
@@ -269,9 +272,10 @@ function initGameGlass() {
       ctx.fillStyle = '#f0f0f0';
       ctx.fill();
 
-      // Текст "WIN"
+      // Текст "WIN" (масштабований розмір шрифту)
+      var fontSize = Math.round(30 * scale);
       ctx.fillStyle = '#000000';
-      ctx.font = '400 30px "Lilita One", Arial, sans-serif';
+      ctx.font = "400 ".concat(fontSize, "px \"Lilita One\", Arial, sans-serif");
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('WIN', centerX, centerY);
@@ -936,7 +940,7 @@ function initGameGlass() {
     updateBalls(deltaTime);
     renderer.render(scene, camera);
 
-    // Створюємо кульки після 3-го чистого кадру для уникнення артефактів на iOS
+    // Створюємо кульки після 10-го чистого кадру для уникнення артефактів на iOS
     if (!ballsCreated && frameCount >= 10) {
       console.log(frameCount);
       createInitialBalls();
