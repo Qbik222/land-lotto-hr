@@ -341,6 +341,19 @@ function initGameGlass() {
   // Геометрія для кульок (спільна для всіх)
   const sphereGeometry = new THREE.SphereGeometry(ballRadius, 16, 16);
 
+  // Флаг для відкладеного створення кульок (вирішує проблему артефактів на iOS)
+  let ballsCreated = false;
+
+  // Функція для початкового створення кульок
+  function createInitialBalls() {
+    if (ballsCreated) return;
+    ballsCreated = true;
+    createNewBalls();
+  }
+
+  // Старий код створення кульок - тепер викликається через createNewBalls()
+  // Залишаємо для сумісності, але не виконуємо при ініціалізації
+  /*
   for (let i = 0; i < ballCount; i++) {
     // Генеруємо випадкове двохзначне число (10-99)
     const randomNumber = Math.floor(Math.random() * 90) + 10;
@@ -445,6 +458,7 @@ function initGameGlass() {
       previousVy: vy
     });
   }
+  */
 
   // Фізика та оновлення позицій кульок
   function updateBalls(deltaTime) {
@@ -916,7 +930,6 @@ function initGameGlass() {
   // Анімаційний цикл
   let lastTime = performance.now();
   let frameCount = 0;
-  let needsReset = true;
   
   function animate(currentTime) {
     const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Обмежити deltaTime для стабільності
@@ -929,10 +942,9 @@ function initGameGlass() {
     updateBalls(deltaTime);
     renderer.render(scene, camera);
     
-    // Скидаємо сцену після 3-го кадру для уникнення артефактів на iOS
-    if (needsReset && frameCount >= 3) {
-      needsReset = false;
-      resetScene();
+    // Створюємо кульки після 3-го чистого кадру для уникнення артефактів на iOS
+    if (!ballsCreated && frameCount >= 3) {
+      createInitialBalls();
     }
     
     requestAnimationFrame(animate);
