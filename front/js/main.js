@@ -62,11 +62,13 @@ function initGameGlass() {
     canvas: canvas,
     alpha: true,
     antialias: !isMobile, // Вимкнути антиаліасинг на мобільних
-    powerPreference: isMobile ? 'low-power' : 'high-performance'
+    powerPreference: isMobile ? 'low-power' : 'high-performance',
+    preserveDrawingBuffer: false // Важливо для iOS - не зберігати буфер між кадрами
   });
   renderer.setSize(760, 760);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2)); // Обмеження DPR
   renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = true; // Явно вмикаємо автоочищення
   renderer.shadowMap.enabled = !isLowPowerDevice; // Вимкнути тіні на слабких пристроях
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   
@@ -913,18 +915,23 @@ function initGameGlass() {
 
   // Анімаційний цикл
   let lastTime = performance.now();
-  let isFirstRender = true;
+  let frameCount = 0;
+  let needsReset = true;
   
   function animate(currentTime) {
     const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Обмежити deltaTime для стабільності
     lastTime = currentTime;
+    frameCount++;
 
+    // Примусово очищаємо буфери перед кожним рендером
+    renderer.clear(true, true, true);
+    
     updateBalls(deltaTime);
     renderer.render(scene, camera);
     
-    // Скидаємо сцену одразу після першого рендеру для уникнення артефактів на iOS
-    if (isFirstRender) {
-      isFirstRender = false;
+    // Скидаємо сцену після 3-го кадру для уникнення артефактів на iOS
+    if (needsReset && frameCount >= 3) {
+      needsReset = false;
       resetScene();
     }
     
