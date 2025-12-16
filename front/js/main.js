@@ -9,6 +9,28 @@ const isLowPowerDevice = isMobile && (navigator.hardwareConcurrency <= 4 || wind
 // Кеш текстур чисел (10-99)
 const numberTextureCache = new Map();
 
+// Спільний canvas для генерації текстур (вирішує проблему ліміту canvas на iOS)
+let sharedCanvas = null;
+let sharedCtx = null;
+
+function getSharedCanvas(size) {
+  if (!sharedCanvas) {
+    sharedCanvas = document.createElement('canvas');
+  }
+  sharedCanvas.width = size;
+  sharedCanvas.height = size;
+  
+  if (!sharedCtx) {
+    sharedCtx = sharedCanvas.getContext('2d', { willReadFrequently: false });
+  }
+  
+  if (sharedCtx) {
+    sharedCtx.clearRect(0, 0, size, size);
+  }
+  
+  return { canvas: sharedCanvas, ctx: sharedCtx };
+}
+
 // Ініціалізація сцени та отримання контролеру вітру
 const windController = initGameGlass();
 
@@ -134,7 +156,7 @@ function initGameGlass() {
   // X, Z - горизонтальна площина, Y - вертикальна вісь (вгору/вниз)
   const maxSafeRadius = containerRadius - ballRadius; // Максимальна відстань від центру для кульки
 
-  // Функція для створення текстури з числом (з кешуванням)
+  // Функція для створення текстури з числом (з кешуванням та спільним canvas)
   function createNumberTexture(number) {
     // Перевіряємо кеш
     if (numberTextureCache.has(number)) {
@@ -142,22 +164,16 @@ function initGameGlass() {
     }
     
     try {
-      const canvas = document.createElement('canvas');
-      if (!canvas || !canvas.getContext) {
-        throw new Error('Canvas is not supported');
-      }
-      
-      // Зменшений розмір текстури для економії памʼяті
       const size = isMobile ? 256 : 512;
-      canvas.width = size;
-      canvas.height = size;
+      const { canvas, ctx } = getSharedCanvas(size);
       
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx || typeof ctx.fillStyle === 'undefined') {
-        console.error('Canvas 2D context is not available or invalid');
-        const texture = new THREE.CanvasTexture(canvas);
+      if (!ctx) {
+        console.error('Canvas 2D context is not available');
+        // Створюємо простий DataTexture як fallback
+        const data = new Uint8Array(size * size * 4).fill(255);
+        const texture = new THREE.DataTexture(data, size, size);
         texture.needsUpdate = true;
+        numberTextureCache.set(number, texture);
         return texture;
       }
       
@@ -173,8 +189,9 @@ function initGameGlass() {
       ctx.textBaseline = 'middle';
       ctx.fillText(number.toString(), size / 2, size / 2);
       
-      // Створюємо текстуру з canvas
-      const texture = new THREE.CanvasTexture(canvas);
+      // Копіюємо дані з спільного canvas в новий для текстури
+      const imageData = ctx.getImageData(0, 0, size, size);
+      const texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
       texture.needsUpdate = true;
       
       // Зберігаємо в кеш
@@ -183,11 +200,10 @@ function initGameGlass() {
       return texture;
     } catch (error) {
       console.error('Error creating number texture:', error);
-      const fallbackCanvas = document.createElement('canvas');
       const size = isMobile ? 256 : 512;
-      fallbackCanvas.width = size;
-      fallbackCanvas.height = size;
-      const texture = new THREE.CanvasTexture(fallbackCanvas);
+      // Fallback: біла текстура
+      const data = new Uint8Array(size * size * 4).fill(255);
+      const texture = new THREE.DataTexture(data, size, size);
       texture.needsUpdate = true;
       return texture;
     }
@@ -196,92 +212,97 @@ function initGameGlass() {
   // Функція для створення текстури з текстом "WIN"
   function createWinTexture() {
     try {
-      const canvas = document.createElement('canvas');
-      if (!canvas || !canvas.getContext) {
-        throw new Error('Canvas is not supported');
-      }
-      
       // Адаптивний розмір текстури
       const size = isMobile ? 512 : 1024;
-      canvas.width = size;
-      canvas.height = size;
+      const { canvas, ctx } = getSharedCanvas(size);
       
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx || typeof ctx.fillStyle === 'undefined') {
-        console.error('Canvas 2D context is not available or invalid');
-        // Повертаємо просту текстуру як fallback
-        const texture = new THREE.CanvasTexture(canvas);
+      if (!ctx) {
+        console.error('Canvas 2D context is not available');
+        // Fallback: фіолетова текстура
+        const data = new Uint8Array(size * size * 4);
+        for (let i = 0; i < size * size; i++) {
+          data[i * 4] = 139;     // R
+          data[i * 4 + 1] = 92;  // G
+          data[i * 4 + 2] = 246; // B
+          data[i * 4 + 3] = 255; // A
+        }
+        const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
         texture.needsUpdate = true;
         return texture;
       }
     
-    const centerX = size / 2;
-    const centerY = size / 2;
-    
-    const gradient = ctx.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, '#1e1b4b');  
-    gradient.addColorStop(0.25, '#4f46e5');
-    gradient.addColorStop(0.5, '#8b5cf6');  
-    gradient.addColorStop(0.75, '#c026d3'); 
-    gradient.addColorStop(1, '#ec4899');    
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-    
-    // Білий еліпс в центрі - вертикально витягнутий для компенсації UV-mapping на сфері
-    const circleRadiusX = size * 0.05; // Горизонтальний радіус
-    const circleRadiusY = size * 0.095; // Вертикальний радіус (більший для компенсації)
-    
-    // Функція для малювання еліпса з fallback
-    const drawEllipse = (x, y, radiusX, radiusY) => {
-      ctx.beginPath();
-      if (ctx.ellipse) {
-        ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
-      } else {
-        // Fallback для старих браузерів - використовуємо scale для перетворення кола
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(radiusX / radiusY, 1);
-        ctx.arc(0, 0, radiusY, 0, Math.PI * 2);
-        ctx.restore();
-      }
-    };
-    
-    // Зовнішня біла обводка
-    drawEllipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-    
-    // Ще одна зовнішня обводка (тонша)
-    drawEllipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Білий еліпс (заливка)
-    drawEllipse(centerX, centerY, circleRadiusX, circleRadiusY);
-    ctx.fillStyle = '#f0f0f0'; // Світло-сірий
-    ctx.fill();
-    
-    // Текст "WIN" - стилі згідно з дизайном
-    ctx.fillStyle = '#000000'; // Чорний колір
-    ctx.font = '400 30px "Lilita One", Arial, sans-serif'; // Lilita One, font-weight: 400
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+      const centerX = size / 2;
+      const centerY = size / 2;
+      
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#1e1b4b');  
+      gradient.addColorStop(0.25, '#4f46e5');
+      gradient.addColorStop(0.5, '#8b5cf6');  
+      gradient.addColorStop(0.75, '#c026d3'); 
+      gradient.addColorStop(1, '#ec4899');    
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Білий еліпс в центрі - вертикально витягнутий для компенсації UV-mapping на сфері
+      const circleRadiusX = size * 0.05;
+      const circleRadiusY = size * 0.095;
+      
+      // Функція для малювання еліпса з fallback
+      const drawEllipse = (x, y, radiusX, radiusY) => {
+        ctx.beginPath();
+        if (ctx.ellipse) {
+          ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+        } else {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(radiusX / radiusY, 1);
+          ctx.arc(0, 0, radiusY, 0, Math.PI * 2);
+          ctx.restore();
+        }
+      };
+      
+      // Зовнішня біла обводка
+      drawEllipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      
+      // Ще одна зовнішня обводка (тонша)
+      drawEllipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      // Білий еліпс (заливка)
+      drawEllipse(centerX, centerY, circleRadiusX, circleRadiusY);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fill();
+      
+      // Текст "WIN"
+      ctx.fillStyle = '#000000';
+      ctx.font = '400 30px "Lilita One", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('WIN', centerX, centerY);
       
-      const texture = new THREE.CanvasTexture(canvas);
+      // Копіюємо дані з спільного canvas
+      const imageData = ctx.getImageData(0, 0, size, size);
+      const texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
       texture.needsUpdate = true;
       return texture;
     } catch (error) {
       console.error('Error creating WIN texture:', error);
-      // Створюємо порожній canvas як fallback
-      const fallbackCanvas = document.createElement('canvas');
-      fallbackCanvas.width = 1024;
-      fallbackCanvas.height = 1024;
-      const texture = new THREE.CanvasTexture(fallbackCanvas);
+      const size = isMobile ? 512 : 1024;
+      // Fallback: фіолетова текстура
+      const data = new Uint8Array(size * size * 4);
+      for (let i = 0; i < size * size; i++) {
+        data[i * 4] = 139;
+        data[i * 4 + 1] = 92;
+        data[i * 4 + 2] = 246;
+        data[i * 4 + 3] = 255;
+      }
+      const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
       texture.needsUpdate = true;
       return texture;
     }
