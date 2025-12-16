@@ -188,11 +188,6 @@ function initGameGlass() {
         return _texture;
       }
 
-      // Дзеркалимо canvas по горизонталі (для коректного відображення на сфері)
-      ctx.save();
-      ctx.translate(size, 0);
-      ctx.scale(-1, 1);
-
       // Білий фон
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, size, size);
@@ -204,11 +199,21 @@ function initGameGlass() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(number.toString(), size / 2, size / 2);
-      ctx.restore();
 
-      // Копіюємо дані з спільного canvas в новий для текстури
+      // Отримуємо дані і перевертаємо по вертикалі (для Three.js)
       var imageData = ctx.getImageData(0, 0, size, size);
-      var texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
+      var flippedData = new Uint8Array(size * size * 4);
+      for (var y = 0; y < size; y++) {
+        for (var x = 0; x < size; x++) {
+          var srcIdx = (y * size + x) * 4;
+          var dstIdx = ((size - 1 - y) * size + x) * 4;
+          flippedData[dstIdx] = imageData.data[srcIdx];
+          flippedData[dstIdx + 1] = imageData.data[srcIdx + 1];
+          flippedData[dstIdx + 2] = imageData.data[srcIdx + 2];
+          flippedData[dstIdx + 3] = imageData.data[srcIdx + 3];
+        }
+      }
+      var texture = new THREE.DataTexture(flippedData, size, size, THREE.RGBAFormat);
       texture.needsUpdate = true;
 
       // Зберігаємо в кеш
@@ -248,11 +253,6 @@ function initGameGlass() {
         _texture3.needsUpdate = true;
         return _texture3;
       }
-
-      // Дзеркалимо canvas по горизонталі (для коректного відображення на сфері)
-      ctx.save();
-      ctx.translate(size, 0);
-      ctx.scale(-1, 1);
       var centerX = size / 2;
       var centerY = size / 2;
       var gradient = ctx.createLinearGradient(0, 0, size, size);
@@ -305,11 +305,21 @@ function initGameGlass() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('WIN', centerX, centerY);
-      ctx.restore();
 
-      // Копіюємо дані з спільного canvas
+      // Отримуємо дані і перевертаємо по вертикалі (для Three.js)
       var imageData = ctx.getImageData(0, 0, size, size);
-      var texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
+      var flippedData = new Uint8Array(size * size * 4);
+      for (var y = 0; y < size; y++) {
+        for (var x = 0; x < size; x++) {
+          var srcIdx = (y * size + x) * 4;
+          var dstIdx = ((size - 1 - y) * size + x) * 4;
+          flippedData[dstIdx] = imageData.data[srcIdx];
+          flippedData[dstIdx + 1] = imageData.data[srcIdx + 1];
+          flippedData[dstIdx + 2] = imageData.data[srcIdx + 2];
+          flippedData[dstIdx + 3] = imageData.data[srcIdx + 3];
+        }
+      }
+      var texture = new THREE.DataTexture(flippedData, size, size, THREE.RGBAFormat);
       texture.needsUpdate = true;
       return texture;
     } catch (error) {
