@@ -209,7 +209,6 @@ function initGameGlass() {
       // Копіюємо дані з спільного canvas в новий для текстури
       var imageData = ctx.getImageData(0, 0, size, size);
       var texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
-      texture.flipY = false; // Canvas координати зверху вниз, Three.js - знизу вгору
       texture.needsUpdate = true;
 
       // Зберігаємо в кеш
@@ -311,7 +310,6 @@ function initGameGlass() {
       // Копіюємо дані з спільного canvas
       var imageData = ctx.getImageData(0, 0, size, size);
       var texture = new THREE.DataTexture(imageData.data, size, size, THREE.RGBAFormat);
-      texture.flipY = false; // Canvas координати зверху вниз, Three.js - знизу вгору
       texture.needsUpdate = true;
       return texture;
     } catch (error) {
