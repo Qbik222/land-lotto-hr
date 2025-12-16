@@ -2,6 +2,13 @@
 
 import * as THREE from 'three';
 
+// Визначення мобільного пристрою
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isLowPowerDevice = isMobile && (navigator.hardwareConcurrency <= 4 || window.innerWidth < 768);
+
+// Кеш текстур чисел (10-99)
+const numberTextureCache = new Map();
+
 // Ініціалізація сцени та отримання контролеру вітру
 const windController = initGameGlass();
 
@@ -11,10 +18,9 @@ function initGameGlass() {
   if (!canvas) return;
 
   // Розміри відповідають видимій синій області на фоні (glass.png)
-  // Синя область менша за розмір канвасу через відступи
-  const containerRadius = 330; // Радіус сфери контейнера (підігнано під фон)
-  const ballRadius = 35; // ~90px diameter
-  const ballCount = 80; // Кількість кульок
+  const containerRadius = 330;
+  const ballRadius = 35;
+  const ballCount = isLowPowerDevice ? 40 : 80; // Менше кульок на слабких пристроях
   const balls = [];
 
   // Стан анімації вітру
@@ -54,26 +60,39 @@ function initGameGlass() {
   const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     alpha: true,
-    antialias: true
+    antialias: !isMobile, // Вимкнути антиаліасинг на мобільних
+    powerPreference: isMobile ? 'low-power' : 'high-performance'
   });
   renderer.setSize(760, 760);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setClearColor(0x000000, 0); // Прозорий фон
-  renderer.shadowMap.enabled = true; // Увімкнути shadow maps
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // М'які тіні
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2)); // Обмеження DPR
+  renderer.setClearColor(0x000000, 0);
+  renderer.shadowMap.enabled = !isLowPowerDevice; // Вимкнути тіні на слабких пристроях
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  
+  // Обробка втрати WebGL контексту (важливо для iOS)
+  canvas.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    console.warn('WebGL context lost. Scene will be restored when context is available.');
+  }, false);
+  
+  canvas.addEventListener('webglcontextrestored', () => {
+    console.log('WebGL context restored. Reloading page for clean state.');
+    window.location.reload();
+  }, false);
 
   // Освітлення
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.9); // Збільшено для більш яскравого білого
+  const ambientLight = new THREE.AmbientLight(0xffffff, isLowPowerDevice ? 1.1 : 0.9);
   scene.add(ambientLight);
 
   // Directional light для тіней та об'ємності
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
   directionalLight.position.set(0.5, 1, 0.8);
-  directionalLight.castShadow = true; // Дозволити світлу створювати тіні
+  directionalLight.castShadow = !isLowPowerDevice;
   
-  // Налаштування shadow camera для directional light
-  directionalLight.shadow.mapSize.width = 2048;
-  directionalLight.shadow.mapSize.height = 2048;
+  // Налаштування shadow camera (менші текстури на мобільних)
+  const shadowMapSize = isMobile ? 512 : 2048;
+  directionalLight.shadow.mapSize.width = shadowMapSize;
+  directionalLight.shadow.mapSize.height = shadowMapSize;
   directionalLight.shadow.camera.near = 0.5;
   directionalLight.shadow.camera.far = 1000;
   directionalLight.shadow.camera.left = -500;
@@ -115,15 +134,21 @@ function initGameGlass() {
   // X, Z - горизонтальна площина, Y - вертикальна вісь (вгору/вниз)
   const maxSafeRadius = containerRadius - ballRadius; // Максимальна відстань від центру для кульки
 
-  // Функція для створення текстури з числом
+  // Функція для створення текстури з числом (з кешуванням)
   function createNumberTexture(number) {
+    // Перевіряємо кеш
+    if (numberTextureCache.has(number)) {
+      return numberTextureCache.get(number);
+    }
+    
     try {
       const canvas = document.createElement('canvas');
       if (!canvas || !canvas.getContext) {
         throw new Error('Canvas is not supported');
       }
       
-      const size = 1024; // Розмір текстури (більший для кращої якості)
+      // Зменшений розмір текстури для економії памʼяті
+      const size = isMobile ? 256 : 512;
       canvas.width = size;
       canvas.height = size;
       
@@ -131,7 +156,6 @@ function initGameGlass() {
       
       if (!ctx || typeof ctx.fillStyle === 'undefined') {
         console.error('Canvas 2D context is not available or invalid');
-        // Повертаємо просту текстуру як fallback
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         return texture;
@@ -141,9 +165,10 @@ function initGameGlass() {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, size, size);
       
-      // Текст з числом - зменшений розмір шрифту
+      // Текст з числом (масштабований розмір шрифту)
+      const fontSize = isMobile ? 60 : 80;
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 120px Arial';
+      ctx.font = `bold ${fontSize}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(number.toString(), size / 2, size / 2);
@@ -151,13 +176,17 @@ function initGameGlass() {
       // Створюємо текстуру з canvas
       const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
+      
+      // Зберігаємо в кеш
+      numberTextureCache.set(number, texture);
+      
       return texture;
     } catch (error) {
       console.error('Error creating number texture:', error);
-      // Створюємо порожній canvas як fallback
       const fallbackCanvas = document.createElement('canvas');
-      fallbackCanvas.width = 1024;
-      fallbackCanvas.height = 1024;
+      const size = isMobile ? 256 : 512;
+      fallbackCanvas.width = size;
+      fallbackCanvas.height = size;
       const texture = new THREE.CanvasTexture(fallbackCanvas);
       texture.needsUpdate = true;
       return texture;
@@ -172,7 +201,8 @@ function initGameGlass() {
         throw new Error('Canvas is not supported');
       }
       
-      const size = 1024; // Збільшений розмір для кращої якості
+      // Адаптивний розмір текстури
+      const size = isMobile ? 512 : 1024;
       canvas.width = size;
       canvas.height = size;
       
@@ -383,8 +413,8 @@ function initGameGlass() {
     // Створити меш (об'єкт) для кульки
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.position.set(x, y, z);
-    sphere.castShadow = true; // Дозволити кульці створювати тіні
-    sphere.receiveShadow = true; // Дозволити кульці отримувати тіні
+    sphere.castShadow = !isLowPowerDevice;
+    sphere.receiveShadow = !isLowPowerDevice;
     scene.add(sphere);
 
     balls.push({
@@ -979,8 +1009,8 @@ function initGameGlass() {
 
       const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
       sphere.position.set(x, y, z);
-      sphere.castShadow = true;
-      sphere.receiveShadow = true;
+      sphere.castShadow = !isLowPowerDevice;
+      sphere.receiveShadow = !isLowPowerDevice;
       scene.add(sphere);
 
       balls.push({
