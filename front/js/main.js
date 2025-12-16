@@ -913,12 +913,21 @@ function initGameGlass() {
 
   // Анімаційний цикл
   let lastTime = performance.now();
+  let isFirstRender = true;
+  
   function animate(currentTime) {
     const deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Обмежити deltaTime для стабільності
     lastTime = currentTime;
 
     updateBalls(deltaTime);
     renderer.render(scene, camera);
+    
+    // Скидаємо сцену одразу після першого рендеру для уникнення артефактів на iOS
+    if (isFirstRender) {
+      isFirstRender = false;
+      resetScene();
+    }
+    
     requestAnimationFrame(animate);
   }
 
@@ -936,11 +945,6 @@ function initGameGlass() {
 
   // Запуск анімації
   requestAnimationFrame(animate);
-  
-  // Скидаємо сцену після першого рендеру для уникнення артефактів на iOS
-  setTimeout(() => {
-    resetScene();
-  }, 100);
   
   // Функція для створення великої кульки "WIN"
   async function showWinBall() {

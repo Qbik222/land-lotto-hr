@@ -918,11 +918,18 @@ function initGameGlass() {
 
   // Анімаційний цикл
   var lastTime = performance.now();
+  var isFirstRender = true;
   function animate(currentTime) {
     var deltaTime = Math.min((currentTime - lastTime) / 16.67, 2); // Обмежити deltaTime для стабільності
     lastTime = currentTime;
     updateBalls(deltaTime);
     renderer.render(scene, camera);
+
+    // Скидаємо сцену одразу після першого рендеру для уникнення артефактів на iOS
+    if (isFirstRender) {
+      isFirstRender = false;
+      resetScene();
+    }
     requestAnimationFrame(animate);
   }
 
