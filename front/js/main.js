@@ -150,13 +150,12 @@ function initGameGlass() {
     const centerX = size / 2;
     const centerY = size / 2;
     
-    // Градієнтний фон (синьо-фіолетово-рожевий) - діагональний
     const gradient = ctx.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, '#1e1b4b');    // Темно-синій navy (верхній лівий)
-    gradient.addColorStop(0.25, '#4f46e5'); // Яскраво-синій indigo
-    gradient.addColorStop(0.5, '#8b5cf6');  // Насичений фіолетовий violet
-    gradient.addColorStop(0.75, '#c026d3'); // Пурпурний magenta
-    gradient.addColorStop(1, '#ec4899');    // Яскраво-рожевий pink (нижній правий)
+    gradient.addColorStop(0, '#1e1b4b');  
+    gradient.addColorStop(0.25, '#4f46e5');
+    gradient.addColorStop(0.5, '#8b5cf6');  
+    gradient.addColorStop(0.75, '#c026d3'); 
+    gradient.addColorStop(1, '#ec4899');    
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
@@ -235,6 +234,7 @@ function initGameGlass() {
     const winMesh = new THREE.Mesh(winGeometry, winMaterial);
     winMesh.position.set(0, 0, 0); // Чітко по центру сфери
     winMesh.scale.set(0.01, 0.01, 0.01); // Починаємо з мінімального розміру (майже невидима)
+    winMesh.rotation.y = -Math.PI; // Початкове обертання -180° (буде анімовано до 0°)
     winMesh.castShadow = true;
     winMesh.receiveShadow = true;
     winMesh.visible = true;
@@ -386,9 +386,14 @@ function initGameGlass() {
       const newScale = 0.01 + (easedProgress * 0.99);
       winBall.scale.set(newScale, newScale, newScale);
       
+      // Обертання від -180° до 0° навколо осі Y
+      const rotationY = -Math.PI + (easedProgress * Math.PI); // від -π (-180°) до 0
+      winBall.rotation.y = rotationY;
+      
       // Якщо анімація завершена
       if (progress >= 1) {
         winBall.scale.set(1, 1, 1);
+        winBall.rotation.y = 0;
         winBallFadeInStartTime = null;
       }
     }
@@ -794,6 +799,150 @@ function initGameGlass() {
     winBall = await createWinBall();
   }
   
+  // Функція для створення нових кульок
+  function createNewBalls() {
+    for (let i = 0; i < ballCount; i++) {
+      const randomNumber = Math.floor(Math.random() * 90) + 10;
+      const numberTexture = createNumberTexture(randomNumber);
+      
+      const sphereMaterial = new THREE.MeshStandardMaterial({
+        map: numberTexture,
+        color: 0xffffff,
+        roughness: 0.1,
+        metalness: 0.0
+      });
+      
+      let attempts = 0;
+      let x, y, z;
+      let validPosition = false;
+
+      while (!validPosition && attempts < 500) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 0.3;
+        const r = Math.random() * maxSafeRadius * 0.8;
+        
+        x = r * Math.sin(phi) * Math.cos(theta);
+        y = r * Math.cos(phi);
+        z = r * Math.sin(phi) * Math.sin(theta);
+
+        if (!isBallInsideSphere(x, y, z, ballRadius, containerRadius)) {
+          attempts++;
+          continue;
+        }
+
+        validPosition = true;
+        for (let j = 0; j < balls.length; j++) {
+          const dx = x - balls[j].x;
+          const dy = y - balls[j].y;
+          const dz = z - balls[j].z;
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (dist < ballRadius * 2) {
+            validPosition = false;
+            break;
+          }
+        }
+        attempts++;
+      }
+
+      if (!validPosition) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 0.3;
+        const r = maxSafeRadius * 0.5;
+        x = r * Math.sin(phi) * Math.cos(theta);
+        y = r * Math.cos(phi);
+        z = r * Math.sin(phi) * Math.sin(theta);
+      }
+
+      const distanceFromCenter = Math.sqrt(x * x + y * y + z * z);
+      if (distanceFromCenter + ballRadius > containerRadius) {
+        const safeRadius = containerRadius - ballRadius - 1;
+        const scale = safeRadius / distanceFromCenter;
+        x *= scale;
+        y *= scale;
+        z *= scale;
+      }
+
+      const speed = 0.3 + Math.random() * 0.7;
+      const angle = Math.random() * Math.PI * 2;
+      const vx = Math.cos(angle) * speed;
+      const vz = Math.sin(angle) * speed;
+      const vy = -0.1 - Math.random() * 0.2;
+
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.set(x, y, z);
+      sphere.castShadow = true;
+      sphere.receiveShadow = true;
+      scene.add(sphere);
+
+      balls.push({
+        mesh: sphere,
+        x: x,
+        y: y,
+        z: z,
+        vx: vx,
+        vy: vy,
+        vz: vz,
+        rotX: 0,
+        rotY: 0,
+        rotZ: 0,
+        wasOnBottom: false,
+        previousVy: vy
+      });
+    }
+  }
+  
+  // Функція для скидання сцени до дефолтного стану
+  function resetScene() {
+    // Видаляємо winBall якщо існує
+    if (winBall !== null) {
+      scene.remove(winBall);
+      if (winBall.material.map) {
+        winBall.material.map.dispose();
+      }
+      winBall.material.dispose();
+      winBall.geometry.dispose();
+      winBall = null;
+      winBallFadeInStartTime = null;
+    }
+    
+    // Видаляємо всі існуючі кульки
+    for (let i = 0; i < balls.length; i++) {
+      const ball = balls[i];
+      scene.remove(ball.mesh);
+      if (ball.mesh.material.map) {
+        ball.mesh.material.map.dispose();
+      }
+      ball.mesh.material.dispose();
+    }
+    balls.length = 0;
+    
+    // Вимикаємо вітер
+    windActive = false;
+    
+    // Створюємо нові кульки
+    createNewBalls();
+  }
+  
+  // Функція для запуску послідовності анімацій виграшу
+  async function playWinSequence(popupAttr = 'winPopup', amount = null, currency = '€') {
+    // 1. Вмикаємо вітер (трясіння кульок)
+    windActive = true;
+    
+    // 2. Через 2000мс показуємо кульку WIN
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    windActive = false;
+    await showWinBall();
+    
+    // 3. Чекаємо завершення анімації появи кульки + 300мс
+    await new Promise(resolve => setTimeout(resolve, winBallFadeInDuration + 300));
+    
+    // 4. Показуємо попап
+    openPopupByAttr(popupAttr, amount, currency);
+    
+    // 5. Скидаємо сцену до дефолтного стану
+    resetScene();
+  }
+  
   // Повертаємо функції для керування
   return {
     toggleWind: () => {
@@ -801,7 +950,9 @@ function initGameGlass() {
       return windActive;
     },
     isWindActive: () => windActive,
-    showWinBall: showWinBall
+    showWinBall: showWinBall,
+    resetScene: resetScene,
+    playWinSequence: playWinSequence
   };
 }
 
@@ -929,6 +1080,22 @@ const showWinBallBtn = document.getElementById('showWinBallBtn');
 if (showWinBallBtn && windController && windController.showWinBall) {
   showWinBallBtn.addEventListener('click', () => {
     windController.showWinBall();
+  });
+}
+
+// Кнопка для скидання сцени
+const resetSceneBtn = document.getElementById('resetSceneBtn');
+if (resetSceneBtn && windController && windController.resetScene) {
+  resetSceneBtn.addEventListener('click', () => {
+    windController.resetScene();
+  });
+}
+
+// Кнопка для запуску WIN послідовності
+const playWinSequenceBtn = document.getElementById('playWinSequenceBtn');
+if (playWinSequenceBtn && windController && windController.playWinSequence) {
+  playWinSequenceBtn.addEventListener('click', () => {
+    windController.playWinSequence('winPopup', 3000, '€');
   });
 }
 

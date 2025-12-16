@@ -158,15 +158,12 @@ function initGameGlass() {
     var ctx = canvas.getContext('2d');
     var centerX = size / 2;
     var centerY = size / 2;
-
-    // Градієнтний фон (синьо-фіолетово-рожевий) - діагональний
     var gradient = ctx.createLinearGradient(0, 0, size, size);
-    gradient.addColorStop(0, '#1e1b4b'); // Темно-синій navy (верхній лівий)
-    gradient.addColorStop(0.25, '#4f46e5'); // Яскраво-синій indigo
-    gradient.addColorStop(0.5, '#8b5cf6'); // Насичений фіолетовий violet
-    gradient.addColorStop(0.75, '#c026d3'); // Пурпурний magenta
-    gradient.addColorStop(1, '#ec4899'); // Яскраво-рожевий pink (нижній правий)
-
+    gradient.addColorStop(0, '#1e1b4b');
+    gradient.addColorStop(0.25, '#4f46e5');
+    gradient.addColorStop(0.5, '#8b5cf6');
+    gradient.addColorStop(0.75, '#c026d3');
+    gradient.addColorStop(1, '#ec4899');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
 
@@ -211,7 +208,7 @@ function initGameGlass() {
   } // Геометрія для кульок (спільна для всіх)
   function _createWinBall() {
     _createWinBall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-      var _i2, ball, winBallRadius, winGeometry, winTexture, winMaterial, winMesh;
+      var _i4, ball, winBallRadius, winGeometry, winTexture, winMaterial, winMesh;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
@@ -227,8 +224,8 @@ function initGameGlass() {
             console.log('Font loading failed, using fallback');
           case 8:
             // Видаляємо всі існуючі кульки зі сцени
-            for (_i2 = 0; _i2 < balls.length; _i2++) {
-              ball = balls[_i2];
+            for (_i4 = 0; _i4 < balls.length; _i4++) {
+              ball = balls[_i4];
               scene.remove(ball.mesh);
               // Звільняємо текстуру та матеріал
               if (ball.mesh.material.map) {
@@ -255,6 +252,7 @@ function initGameGlass() {
             winMesh = new THREE.Mesh(winGeometry, winMaterial);
             winMesh.position.set(0, 0, 0); // Чітко по центру сфери
             winMesh.scale.set(0.01, 0.01, 0.01); // Починаємо з мінімального розміру (майже невидима)
+            winMesh.rotation.y = -Math.PI; // Початкове обертання -180° (буде анімовано до 0°)
             winMesh.castShadow = true;
             winMesh.receiveShadow = true;
             winMesh.visible = true;
@@ -265,7 +263,7 @@ function initGameGlass() {
             // Запускаємо анімацію появи (scale animation)
             winBallFadeInStartTime = performance.now();
             return _context.abrupt("return", winMesh);
-          case 23:
+          case 24:
           case "end":
             return _context.stop();
         }
@@ -412,9 +410,14 @@ function initGameGlass() {
       var newScale = 0.01 + easedProgress * 0.99;
       winBall.scale.set(newScale, newScale, newScale);
 
+      // Обертання від -180° до 0° навколо осі Y
+      var rotationY = -Math.PI + easedProgress * Math.PI; // від -π (-180°) до 0
+      winBall.rotation.y = rotationY;
+
       // Якщо анімація завершена
       if (progress >= 1) {
         winBall.scale.set(1, 1, 1);
+        winBall.rotation.y = 0;
         winBallFadeInStartTime = null;
       }
     }
@@ -801,7 +804,7 @@ function initGameGlass() {
   // Функція для створення великої кульки "WIN"
   function showWinBall() {
     return _showWinBall.apply(this, arguments);
-  } // Повертаємо функції для керування
+  } // Функція для створення нових кульок
   function _showWinBall() {
     _showWinBall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
       return _regeneratorRuntime().wrap(function _callee2$(_context2) {
@@ -825,6 +828,167 @@ function initGameGlass() {
     }));
     return _showWinBall.apply(this, arguments);
   }
+  function createNewBalls() {
+    for (var _i2 = 0; _i2 < ballCount; _i2++) {
+      var _randomNumber = Math.floor(Math.random() * 90) + 10;
+      var _numberTexture = createNumberTexture(_randomNumber);
+      var _sphereMaterial = new THREE.MeshStandardMaterial({
+        map: _numberTexture,
+        color: 0xffffff,
+        roughness: 0.1,
+        metalness: 0.0
+      });
+      var _attempts = 0;
+      var _x = void 0,
+        _y = void 0,
+        _z = void 0;
+      var _validPosition = false;
+      while (!_validPosition && _attempts < 500) {
+        var _theta2 = Math.random() * Math.PI * 2;
+        var _phi2 = Math.random() * Math.PI * 0.3;
+        var _r2 = Math.random() * maxSafeRadius * 0.8;
+        _x = _r2 * Math.sin(_phi2) * Math.cos(_theta2);
+        _y = _r2 * Math.cos(_phi2);
+        _z = _r2 * Math.sin(_phi2) * Math.sin(_theta2);
+        if (!isBallInsideSphere(_x, _y, _z, ballRadius, containerRadius)) {
+          _attempts++;
+          continue;
+        }
+        _validPosition = true;
+        for (var _j2 = 0; _j2 < balls.length; _j2++) {
+          var _dx2 = _x - balls[_j2].x;
+          var _dy2 = _y - balls[_j2].y;
+          var _dz2 = _z - balls[_j2].z;
+          var _dist = Math.sqrt(_dx2 * _dx2 + _dy2 * _dy2 + _dz2 * _dz2);
+          if (_dist < ballRadius * 2) {
+            _validPosition = false;
+            break;
+          }
+        }
+        _attempts++;
+      }
+      if (!_validPosition) {
+        var _theta3 = Math.random() * Math.PI * 2;
+        var _phi3 = Math.random() * Math.PI * 0.3;
+        var _r3 = maxSafeRadius * 0.5;
+        _x = _r3 * Math.sin(_phi3) * Math.cos(_theta3);
+        _y = _r3 * Math.cos(_phi3);
+        _z = _r3 * Math.sin(_phi3) * Math.sin(_theta3);
+      }
+      var _distanceFromCenter2 = Math.sqrt(_x * _x + _y * _y + _z * _z);
+      if (_distanceFromCenter2 + ballRadius > containerRadius) {
+        var _safeRadius2 = containerRadius - ballRadius - 1;
+        var _scale3 = _safeRadius2 / _distanceFromCenter2;
+        _x *= _scale3;
+        _y *= _scale3;
+        _z *= _scale3;
+      }
+      var _speed2 = 0.3 + Math.random() * 0.7;
+      var _angle = Math.random() * Math.PI * 2;
+      var _vx = Math.cos(_angle) * _speed2;
+      var _vz = Math.sin(_angle) * _speed2;
+      var _vy = -0.1 - Math.random() * 0.2;
+      var _sphere = new THREE.Mesh(sphereGeometry, _sphereMaterial);
+      _sphere.position.set(_x, _y, _z);
+      _sphere.castShadow = true;
+      _sphere.receiveShadow = true;
+      scene.add(_sphere);
+      balls.push({
+        mesh: _sphere,
+        x: _x,
+        y: _y,
+        z: _z,
+        vx: _vx,
+        vy: _vy,
+        vz: _vz,
+        rotX: 0,
+        rotY: 0,
+        rotZ: 0,
+        wasOnBottom: false,
+        previousVy: _vy
+      });
+    }
+  }
+
+  // Функція для скидання сцени до дефолтного стану
+  function resetScene() {
+    // Видаляємо winBall якщо існує
+    if (winBall !== null) {
+      scene.remove(winBall);
+      if (winBall.material.map) {
+        winBall.material.map.dispose();
+      }
+      winBall.material.dispose();
+      winBall.geometry.dispose();
+      winBall = null;
+      winBallFadeInStartTime = null;
+    }
+
+    // Видаляємо всі існуючі кульки
+    for (var _i3 = 0; _i3 < balls.length; _i3++) {
+      var ball = balls[_i3];
+      scene.remove(ball.mesh);
+      if (ball.mesh.material.map) {
+        ball.mesh.material.map.dispose();
+      }
+      ball.mesh.material.dispose();
+    }
+    balls.length = 0;
+
+    // Вимикаємо вітер
+    windActive = false;
+
+    // Створюємо нові кульки
+    createNewBalls();
+  }
+
+  // Функція для запуску послідовності анімацій виграшу
+  function playWinSequence() {
+    return _playWinSequence.apply(this, arguments);
+  } // Повертаємо функції для керування
+  function _playWinSequence() {
+    _playWinSequence = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+      var popupAttr,
+        amount,
+        currency,
+        _args3 = arguments;
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
+          case 0:
+            popupAttr = _args3.length > 0 && _args3[0] !== undefined ? _args3[0] : 'winPopup';
+            amount = _args3.length > 1 && _args3[1] !== undefined ? _args3[1] : null;
+            currency = _args3.length > 2 && _args3[2] !== undefined ? _args3[2] : '€';
+            // 1. Вмикаємо вітер (трясіння кульок)
+            windActive = true;
+
+            // 2. Через 2000мс показуємо кульку WIN
+            _context3.next = 6;
+            return new Promise(function (resolve) {
+              return setTimeout(resolve, 2000);
+            });
+          case 6:
+            windActive = false;
+            _context3.next = 9;
+            return showWinBall();
+          case 9:
+            _context3.next = 11;
+            return new Promise(function (resolve) {
+              return setTimeout(resolve, winBallFadeInDuration + 300);
+            });
+          case 11:
+            // 4. Показуємо попап
+            openPopupByAttr(popupAttr, amount, currency);
+
+            // 5. Скидаємо сцену до дефолтного стану
+            resetScene();
+          case 13:
+          case "end":
+            return _context3.stop();
+        }
+      }, _callee3);
+    }));
+    return _playWinSequence.apply(this, arguments);
+  }
   return {
     toggleWind: function toggleWind() {
       windActive = !windActive;
@@ -833,7 +997,9 @@ function initGameGlass() {
     isWindActive: function isWindActive() {
       return windActive;
     },
-    showWinBall: showWinBall
+    showWinBall: showWinBall,
+    resetScene: resetScene,
+    playWinSequence: playWinSequence
   };
 }
 
@@ -955,6 +1121,22 @@ var showWinBallBtn = document.getElementById('showWinBallBtn');
 if (showWinBallBtn && windController && windController.showWinBall) {
   showWinBallBtn.addEventListener('click', function () {
     windController.showWinBall();
+  });
+}
+
+// Кнопка для скидання сцени
+var resetSceneBtn = document.getElementById('resetSceneBtn');
+if (resetSceneBtn && windController && windController.resetScene) {
+  resetSceneBtn.addEventListener('click', function () {
+    windController.resetScene();
+  });
+}
+
+// Кнопка для запуску WIN послідовності
+var playWinSequenceBtn = document.getElementById('playWinSequenceBtn');
+if (playWinSequenceBtn && windController && windController.playWinSequence) {
+  playWinSequenceBtn.addEventListener('click', function () {
+    windController.playWinSequence('winPopup', 3000, '€');
   });
 }
 
