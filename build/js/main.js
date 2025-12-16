@@ -5,6 +5,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 var THREE = _interopRequireWildcard(require("three"));
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return exports; }; var exports = {}, Op = Object.prototype, hasOwn = Op.hasOwnProperty, defineProperty = Object.defineProperty || function (obj, key, desc) { obj[key] = desc.value; }, $Symbol = "function" == typeof Symbol ? Symbol : {}, iteratorSymbol = $Symbol.iterator || "@@iterator", asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator", toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag"; function define(obj, key, value) { return Object.defineProperty(obj, key, { value: value, enumerable: !0, configurable: !0, writable: !0 }), obj[key]; } try { define({}, ""); } catch (err) { define = function define(obj, key, value) { return obj[key] = value; }; } function wrap(innerFn, outerFn, self, tryLocsList) { var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator, generator = Object.create(protoGenerator.prototype), context = new Context(tryLocsList || []); return defineProperty(generator, "_invoke", { value: makeInvokeMethod(innerFn, self, context) }), generator; } function tryCatch(fn, obj, arg) { try { return { type: "normal", arg: fn.call(obj, arg) }; } catch (err) { return { type: "throw", arg: err }; } } exports.wrap = wrap; var ContinueSentinel = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var IteratorPrototype = {}; define(IteratorPrototype, iteratorSymbol, function () { return this; }); var getProto = Object.getPrototypeOf, NativeIteratorPrototype = getProto && getProto(getProto(values([]))); NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol) && (IteratorPrototype = NativeIteratorPrototype); var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype); function defineIteratorMethods(prototype) { ["next", "throw", "return"].forEach(function (method) { define(prototype, method, function (arg) { return this._invoke(method, arg); }); }); } function AsyncIterator(generator, PromiseImpl) { function invoke(method, arg, resolve, reject) { var record = tryCatch(generator[method], generator, arg); if ("throw" !== record.type) { var result = record.arg, value = result.value; return value && "object" == _typeof(value) && hasOwn.call(value, "__await") ? PromiseImpl.resolve(value.__await).then(function (value) { invoke("next", value, resolve, reject); }, function (err) { invoke("throw", err, resolve, reject); }) : PromiseImpl.resolve(value).then(function (unwrapped) { result.value = unwrapped, resolve(result); }, function (error) { return invoke("throw", error, resolve, reject); }); } reject(record.arg); } var previousPromise; defineProperty(this, "_invoke", { value: function value(method, arg) { function callInvokeWithMethodAndArg() { return new PromiseImpl(function (resolve, reject) { invoke(method, arg, resolve, reject); }); } return previousPromise = previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg(); } }); } function makeInvokeMethod(innerFn, self, context) { var state = "suspendedStart"; return function (method, arg) { if ("executing" === state) throw new Error("Generator is already running"); if ("completed" === state) { if ("throw" === method) throw arg; return doneResult(); } for (context.method = method, context.arg = arg;;) { var delegate = context.delegate; if (delegate) { var delegateResult = maybeInvokeDelegate(delegate, context); if (delegateResult) { if (delegateResult === ContinueSentinel) continue; return delegateResult; } } if ("next" === context.method) context.sent = context._sent = context.arg;else if ("throw" === context.method) { if ("suspendedStart" === state) throw state = "completed", context.arg; context.dispatchException(context.arg); } else "return" === context.method && context.abrupt("return", context.arg); state = "executing"; var record = tryCatch(innerFn, self, context); if ("normal" === record.type) { if (state = context.done ? "completed" : "suspendedYield", record.arg === ContinueSentinel) continue; return { value: record.arg, done: context.done }; } "throw" === record.type && (state = "completed", context.method = "throw", context.arg = record.arg); } }; } function maybeInvokeDelegate(delegate, context) { var methodName = context.method, method = delegate.iterator[methodName]; if (undefined === method) return context.delegate = null, "throw" === methodName && delegate.iterator["return"] && (context.method = "return", context.arg = undefined, maybeInvokeDelegate(delegate, context), "throw" === context.method) || "return" !== methodName && (context.method = "throw", context.arg = new TypeError("The iterator does not provide a '" + methodName + "' method")), ContinueSentinel; var record = tryCatch(method, delegate.iterator, context.arg); if ("throw" === record.type) return context.method = "throw", context.arg = record.arg, context.delegate = null, ContinueSentinel; var info = record.arg; return info ? info.done ? (context[delegate.resultName] = info.value, context.next = delegate.nextLoc, "return" !== context.method && (context.method = "next", context.arg = undefined), context.delegate = null, ContinueSentinel) : info : (context.method = "throw", context.arg = new TypeError("iterator result is not an object"), context.delegate = null, ContinueSentinel); } function pushTryEntry(locs) { var entry = { tryLoc: locs[0] }; 1 in locs && (entry.catchLoc = locs[1]), 2 in locs && (entry.finallyLoc = locs[2], entry.afterLoc = locs[3]), this.tryEntries.push(entry); } function resetTryEntry(entry) { var record = entry.completion || {}; record.type = "normal", delete record.arg, entry.completion = record; } function Context(tryLocsList) { this.tryEntries = [{ tryLoc: "root" }], tryLocsList.forEach(pushTryEntry, this), this.reset(!0); } function values(iterable) { if (iterable) { var iteratorMethod = iterable[iteratorSymbol]; if (iteratorMethod) return iteratorMethod.call(iterable); if ("function" == typeof iterable.next) return iterable; if (!isNaN(iterable.length)) { var i = -1, next = function next() { for (; ++i < iterable.length;) if (hasOwn.call(iterable, i)) return next.value = iterable[i], next.done = !1, next; return next.value = undefined, next.done = !0, next; }; return next.next = next; } } return { next: doneResult }; } function doneResult() { return { value: undefined, done: !0 }; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, defineProperty(Gp, "constructor", { value: GeneratorFunctionPrototype, configurable: !0 }), defineProperty(GeneratorFunctionPrototype, "constructor", { value: GeneratorFunction, configurable: !0 }), GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"), exports.isGeneratorFunction = function (genFun) { var ctor = "function" == typeof genFun && genFun.constructor; return !!ctor && (ctor === GeneratorFunction || "GeneratorFunction" === (ctor.displayName || ctor.name)); }, exports.mark = function (genFun) { return Object.setPrototypeOf ? Object.setPrototypeOf(genFun, GeneratorFunctionPrototype) : (genFun.__proto__ = GeneratorFunctionPrototype, define(genFun, toStringTagSymbol, "GeneratorFunction")), genFun.prototype = Object.create(Gp), genFun; }, exports.awrap = function (arg) { return { __await: arg }; }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, asyncIteratorSymbol, function () { return this; }), exports.AsyncIterator = AsyncIterator, exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) { void 0 === PromiseImpl && (PromiseImpl = Promise); var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl); return exports.isGeneratorFunction(outerFn) ? iter : iter.next().then(function (result) { return result.done ? result.value : iter.next(); }); }, defineIteratorMethods(Gp), define(Gp, toStringTagSymbol, "Generator"), define(Gp, iteratorSymbol, function () { return this; }), define(Gp, "toString", function () { return "[object Generator]"; }), exports.keys = function (val) { var object = Object(val), keys = []; for (var key in object) keys.push(key); return keys.reverse(), function next() { for (; keys.length;) { var key = keys.pop(); if (key in object) return next.value = key, next.done = !1, next; } return next.done = !0, next; }; }, exports.values = values, Context.prototype = { constructor: Context, reset: function reset(skipTempReset) { if (this.prev = 0, this.next = 0, this.sent = this._sent = undefined, this.done = !1, this.delegate = null, this.method = "next", this.arg = undefined, this.tryEntries.forEach(resetTryEntry), !skipTempReset) for (var name in this) "t" === name.charAt(0) && hasOwn.call(this, name) && !isNaN(+name.slice(1)) && (this[name] = undefined); }, stop: function stop() { this.done = !0; var rootRecord = this.tryEntries[0].completion; if ("throw" === rootRecord.type) throw rootRecord.arg; return this.rval; }, dispatchException: function dispatchException(exception) { if (this.done) throw exception; var context = this; function handle(loc, caught) { return record.type = "throw", record.arg = exception, context.next = loc, caught && (context.method = "next", context.arg = undefined), !!caught; } for (var i = this.tryEntries.length - 1; i >= 0; --i) { var entry = this.tryEntries[i], record = entry.completion; if ("root" === entry.tryLoc) return handle("end"); if (entry.tryLoc <= this.prev) { var hasCatch = hasOwn.call(entry, "catchLoc"), hasFinally = hasOwn.call(entry, "finallyLoc"); if (hasCatch && hasFinally) { if (this.prev < entry.catchLoc) return handle(entry.catchLoc, !0); if (this.prev < entry.finallyLoc) return handle(entry.finallyLoc); } else if (hasCatch) { if (this.prev < entry.catchLoc) return handle(entry.catchLoc, !0); } else { if (!hasFinally) throw new Error("try statement without catch or finally"); if (this.prev < entry.finallyLoc) return handle(entry.finallyLoc); } } } }, abrupt: function abrupt(type, arg) { for (var i = this.tryEntries.length - 1; i >= 0; --i) { var entry = this.tryEntries[i]; if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) { var finallyEntry = entry; break; } } finallyEntry && ("break" === type || "continue" === type) && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc && (finallyEntry = null); var record = finallyEntry ? finallyEntry.completion : {}; return record.type = type, record.arg = arg, finallyEntry ? (this.method = "next", this.next = finallyEntry.finallyLoc, ContinueSentinel) : this.complete(record); }, complete: function complete(record, afterLoc) { if ("throw" === record.type) throw record.arg; return "break" === record.type || "continue" === record.type ? this.next = record.arg : "return" === record.type ? (this.rval = this.arg = record.arg, this.method = "return", this.next = "end") : "normal" === record.type && afterLoc && (this.next = afterLoc), ContinueSentinel; }, finish: function finish(finallyLoc) { for (var i = this.tryEntries.length - 1; i >= 0; --i) { var entry = this.tryEntries[i]; if (entry.finallyLoc === finallyLoc) return this.complete(entry.completion, entry.afterLoc), resetTryEntry(entry), ContinueSentinel; } }, "catch": function _catch(tryLoc) { for (var i = this.tryEntries.length - 1; i >= 0; --i) { var entry = this.tryEntries[i]; if (entry.tryLoc === tryLoc) { var record = entry.completion; if ("throw" === record.type) { var thrown = record.arg; resetTryEntry(entry); } return thrown; } } throw new Error("illegal catch attempt"); }, delegateYield: function delegateYield(iterable, resultName, nextLoc) { return this.delegate = { iterator: values(iterable), resultName: resultName, nextLoc: nextLoc }, "next" === this.method && (this.arg = undefined), ContinueSentinel; } }, exports; }
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 // Ініціалізація сцени та отримання контролеру вітру
 var windController = initGameGlass();
 
@@ -101,11 +104,11 @@ function initGameGlass() {
     color: 0x4A90E2,
     // Синій колір, схожий на фон
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.15,
     // Напівпрозорість для відповідності фону
     side: THREE.DoubleSide,
-    metalness: 0.3,
-    roughness: 0.4
+    metalness: 0.1,
+    roughness: 0.2
   });
   var containerMesh = new THREE.Mesh(containerGeometry, containerMaterial);
   containerMesh.receiveShadow = true; // Дозволити отримувати тіні
@@ -124,7 +127,7 @@ function initGameGlass() {
   // Функція для створення текстури з числом
   function createNumberTexture(number) {
     var canvas = document.createElement('canvas');
-    var size = 512; // Розмір текстури (більший для кращої якості)
+    var size = 1024; // Розмір текстури (більший для кращої якості)
     canvas.width = size;
     canvas.height = size;
     var ctx = canvas.getContext('2d');
@@ -135,7 +138,7 @@ function initGameGlass() {
 
     // Текст з числом - зменшений розмір шрифту
     ctx.fillStyle = '#000000';
-    ctx.font = 'bold 100px Arial';
+    ctx.font = 'bold 120px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(number.toString(), size / 2, size / 2);
@@ -149,21 +152,54 @@ function initGameGlass() {
   // Функція для створення текстури з текстом "WIN"
   function createWinTexture() {
     var canvas = document.createElement('canvas');
-    var size = 512;
+    var size = 1024; // Збільшений розмір для кращої якості
     canvas.width = size;
     canvas.height = size;
     var ctx = canvas.getContext('2d');
+    var centerX = size / 2;
+    var centerY = size / 2;
 
-    // Білий фон
-    ctx.fillStyle = '#ffffff';
+    // Градієнтний фон (синьо-фіолетово-рожевий) - діагональний
+    var gradient = ctx.createLinearGradient(0, 0, size, size);
+    gradient.addColorStop(0, '#1e1b4b'); // Темно-синій navy (верхній лівий)
+    gradient.addColorStop(0.25, '#4f46e5'); // Яскраво-синій indigo
+    gradient.addColorStop(0.5, '#8b5cf6'); // Насичений фіолетовий violet
+    gradient.addColorStop(0.75, '#c026d3'); // Пурпурний magenta
+    gradient.addColorStop(1, '#ec4899'); // Яскраво-рожевий pink (нижній правий)
+
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
 
-    // Текст "WIN"
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 120px Arial';
+    // Білий еліпс в центрі - вертикально витягнутий для компенсації UV-mapping на сфері
+    var circleRadiusX = size * 0.05; // Горизонтальний радіус
+    var circleRadiusY = size * 0.095; // Вертикальний радіус (більший для компенсації)
+
+    // Зовнішня біла обводка
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Ще одна зовнішня обводка (тонша)
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Білий еліпс (заливка)
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX, circleRadiusY, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#f0f0f0'; // Світло-сірий
+    ctx.fill();
+
+    // Текст "WIN" - стилі згідно з дизайном
+    ctx.fillStyle = '#000000'; // Чорний колір
+    ctx.font = '400 30px "Lilita One", Arial, sans-serif'; // Lilita One, font-weight: 400
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('WIN', size / 2, size / 2);
+    ctx.fillText('WIN', centerX, centerY);
     var texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
     return texture;
@@ -171,47 +207,72 @@ function initGameGlass() {
 
   // Функція для створення великої кульки "WIN" в центрі
   function createWinBall() {
-    // Видаляємо всі існуючі кульки зі сцени
-    for (var i = 0; i < balls.length; i++) {
-      var ball = balls[i];
-      scene.remove(ball.mesh);
-      // Звільняємо текстуру та матеріал
-      if (ball.mesh.material.map) {
-        ball.mesh.material.map.dispose();
-      }
-      ball.mesh.material.dispose();
-    }
-    // Очищаємо масив
-    balls.length = 0;
+    return _createWinBall.apply(this, arguments);
+  } // Геометрія для кульок (спільна для всіх)
+  function _createWinBall() {
+    _createWinBall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var _i2, ball, winBallRadius, winGeometry, winTexture, winMaterial, winMesh;
+      return _regeneratorRuntime().wrap(function _callee$(_context) {
+        while (1) switch (_context.prev = _context.next) {
+          case 0:
+            _context.prev = 0;
+            _context.next = 3;
+            return document.fonts.load('400 75px "Lilita One"');
+          case 3:
+            _context.next = 8;
+            break;
+          case 5:
+            _context.prev = 5;
+            _context.t0 = _context["catch"](0);
+            console.log('Font loading failed, using fallback');
+          case 8:
+            // Видаляємо всі існуючі кульки зі сцени
+            for (_i2 = 0; _i2 < balls.length; _i2++) {
+              ball = balls[_i2];
+              scene.remove(ball.mesh);
+              // Звільняємо текстуру та матеріал
+              if (ball.mesh.material.map) {
+                ball.mesh.material.map.dispose();
+              }
+              ball.mesh.material.dispose();
+            }
+            // Очищаємо масив
+            balls.length = 0;
 
-    // Створюємо велику кульку (85% від радіусу контейнера)
-    var winBallRadius = containerRadius * 0.85;
-    var winGeometry = new THREE.SphereGeometry(winBallRadius, 64, 64);
-    var winTexture = createWinTexture();
-    var winMaterial = new THREE.MeshStandardMaterial({
-      map: winTexture,
-      color: 0xffffff,
-      roughness: 0.3,
-      metalness: 0.0,
-      side: THREE.FrontSide // Рендеримо тільки зовнішню сторону
-    });
+            // Створюємо велику кульку (85% від радіусу контейнера)
+            winBallRadius = containerRadius * 0.85;
+            winGeometry = new THREE.SphereGeometry(winBallRadius, 64, 64);
+            winTexture = createWinTexture();
+            winMaterial = new THREE.MeshStandardMaterial({
+              map: winTexture,
+              color: 0xffffff,
+              roughness: 0.2,
+              // Гладка поверхня
+              metalness: 0.1,
+              // Легкий металевий відблиск
+              side: THREE.FrontSide // Рендеримо тільки зовнішню сторону
+            });
+            winMesh = new THREE.Mesh(winGeometry, winMaterial);
+            winMesh.position.set(0, 0, 0); // Чітко по центру сфери
+            winMesh.scale.set(0.01, 0.01, 0.01); // Починаємо з мінімального розміру (майже невидима)
+            winMesh.castShadow = true;
+            winMesh.receiveShadow = true;
+            winMesh.visible = true;
 
-    var winMesh = new THREE.Mesh(winGeometry, winMaterial);
-    winMesh.position.set(0, 0, 0); // Чітко по центру сфери
-    winMesh.scale.set(0.01, 0.01, 0.01); // Починаємо з мінімального розміру (майже невидима)
-    winMesh.castShadow = true;
-    winMesh.receiveShadow = true;
-    winMesh.visible = true;
+            // Додаємо кульку до сцени
+            scene.add(winMesh);
 
-    // Додаємо кульку до сцени
-    scene.add(winMesh);
-
-    // Запускаємо анімацію появи (scale animation)
-    winBallFadeInStartTime = performance.now();
-    return winMesh;
+            // Запускаємо анімацію появи (scale animation)
+            winBallFadeInStartTime = performance.now();
+            return _context.abrupt("return", winMesh);
+          case 23:
+          case "end":
+            return _context.stop();
+        }
+      }, _callee, null, [[0, 5]]);
+    }));
+    return _createWinBall.apply(this, arguments);
   }
-
-  // Геометрія для кульок (спільна для всіх)
   var sphereGeometry = new THREE.SphereGeometry(ballRadius, 16, 16);
   for (var i = 0; i < ballCount; i++) {
     // Генеруємо випадкове двохзначне число (10-99)
@@ -739,14 +800,31 @@ function initGameGlass() {
 
   // Функція для створення великої кульки "WIN"
   function showWinBall() {
-    // Якщо кулька вже існує, не створюємо нову
-    if (winBall !== null) {
-      return;
-    }
-    winBall = createWinBall();
+    return _showWinBall.apply(this, arguments);
+  } // Повертаємо функції для керування
+  function _showWinBall() {
+    _showWinBall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+      return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+        while (1) switch (_context2.prev = _context2.next) {
+          case 0:
+            if (!(winBall !== null)) {
+              _context2.next = 2;
+              break;
+            }
+            return _context2.abrupt("return");
+          case 2:
+            _context2.next = 4;
+            return createWinBall();
+          case 4:
+            winBall = _context2.sent;
+          case 5:
+          case "end":
+            return _context2.stop();
+        }
+      }, _callee2);
+    }));
+    return _showWinBall.apply(this, arguments);
   }
-
-  // Повертаємо функції для керування
   return {
     toggleWind: function toggleWind() {
       windActive = !windActive;

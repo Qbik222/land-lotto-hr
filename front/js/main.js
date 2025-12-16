@@ -16,7 +16,7 @@ function initGameGlass() {
   const ballRadius = 35; // ~90px diameter
   const ballCount = 80; // Кількість кульок
   const balls = [];
-  
+
   // Стан анімації вітру
   let windActive = false;
   const windStrength = 2.5; // Сила вітру
@@ -94,10 +94,10 @@ function initGameGlass() {
   const containerMaterial = new THREE.MeshStandardMaterial({
     color: 0x4A90E2, // Синій колір, схожий на фон
     transparent: true,
-    opacity: 0.4, // Напівпрозорість для відповідності фону
+    opacity: 0.15, // Напівпрозорість для відповідності фону
     side: THREE.DoubleSide,
-    metalness: 0.3,
-    roughness: 0.4
+    metalness: 0.1,
+    roughness: 0.2
   });
 
   const containerMesh = new THREE.Mesh(containerGeometry, containerMaterial);
@@ -117,7 +117,7 @@ function initGameGlass() {
   // Функція для створення текстури з числом
   function createNumberTexture(number) {
     const canvas = document.createElement('canvas');
-    const size = 512; // Розмір текстури (більший для кращої якості)
+    const size = 1024; // Розмір текстури (більший для кращої якості)
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
@@ -128,7 +128,7 @@ function initGameGlass() {
     
     // Текст з числом - зменшений розмір шрифту
     ctx.fillStyle = '#000000';
-    ctx.font = 'bold 100px Arial';
+    ctx.font = 'bold 120px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(number.toString(), size / 2, size / 2);
@@ -142,21 +142,55 @@ function initGameGlass() {
   // Функція для створення текстури з текстом "WIN"
   function createWinTexture() {
     const canvas = document.createElement('canvas');
-    const size = 512;
+    const size = 1024; // Збільшений розмір для кращої якості
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     
-    // Білий фон
-    ctx.fillStyle = '#ffffff';
+    const centerX = size / 2;
+    const centerY = size / 2;
+    
+    // Градієнтний фон (синьо-фіолетово-рожевий) - діагональний
+    const gradient = ctx.createLinearGradient(0, 0, size, size);
+    gradient.addColorStop(0, '#1e1b4b');    // Темно-синій navy (верхній лівий)
+    gradient.addColorStop(0.25, '#4f46e5'); // Яскраво-синій indigo
+    gradient.addColorStop(0.5, '#8b5cf6');  // Насичений фіолетовий violet
+    gradient.addColorStop(0.75, '#c026d3'); // Пурпурний magenta
+    gradient.addColorStop(1, '#ec4899');    // Яскраво-рожевий pink (нижній правий)
+    
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
     
-    // Текст "WIN"
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 120px Arial';
+    // Білий еліпс в центрі - вертикально витягнутий для компенсації UV-mapping на сфері
+    const circleRadiusX = size * 0.05; // Горизонтальний радіус
+    const circleRadiusY = size * 0.095; // Вертикальний радіус (більший для компенсації)
+    
+    // Зовнішня біла обводка
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    
+    // Ще одна зовнішня обводка (тонша)
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Білий еліпс (заливка)
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, circleRadiusX, circleRadiusY, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#f0f0f0'; // Світло-сірий
+    ctx.fill();
+    
+    // Текст "WIN" - стилі згідно з дизайном
+    ctx.fillStyle = '#000000'; // Чорний колір
+    ctx.font = '400 30px "Lilita One", Arial, sans-serif'; // Lilita One, font-weight: 400
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('WIN', size / 2, size / 2);
+    ctx.fillText('WIN', centerX, centerY);
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
@@ -164,7 +198,14 @@ function initGameGlass() {
   }
 
   // Функція для створення великої кульки "WIN" в центрі
-  function createWinBall() {
+  async function createWinBall() {
+    // Завантажуємо шрифт перед створенням текстури
+    try {
+      await document.fonts.load('400 75px "Lilita One"');
+    } catch (e) {
+      console.log('Font loading failed, using fallback');
+    }
+    
     // Видаляємо всі існуючі кульки зі сцени
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
@@ -186,8 +227,8 @@ function initGameGlass() {
     const winMaterial = new THREE.MeshStandardMaterial({
       map: winTexture,
       color: 0xffffff,
-      roughness: 0.3,
-      metalness: 0.0,
+      roughness: 0.2,   // Гладка поверхня
+      metalness: 0.1,   // Легкий металевий відблиск
       side: THREE.FrontSide // Рендеримо тільки зовнішню сторону
     });
     
@@ -744,13 +785,13 @@ function initGameGlass() {
   requestAnimationFrame(animate);
   
   // Функція для створення великої кульки "WIN"
-  function showWinBall() {
+  async function showWinBall() {
     // Якщо кулька вже існує, не створюємо нову
     if (winBall !== null) {
       return;
     }
     
-    winBall = createWinBall();
+    winBall = await createWinBall();
   }
   
   // Повертаємо функції для керування
