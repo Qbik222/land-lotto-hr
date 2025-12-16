@@ -19,8 +19,9 @@ function initGameGlass() {
 
   // Стан анімації вітру
   let windActive = false;
-  const windStrength = 2.5; // Сила вітру
-  const windStreamRadius = 80; // Радіус струї вітру (тонка струя з центру)
+  const windStrength = 4.0; // Сила вітру (збільшено вдвічі)
+  const windStreamRadius = 120; // Радіус струї вітру (збільшено для ширшого ефекту)
+  const windTurbulence = 10.5; // Сила турбулентності (розкидання в сторони)
   const windDirection = { x: 0, y: 1, z: 0 }; // Вітер дме знизу вгору (по Y)
   
   // Стан великої кульки "WIN"
@@ -205,20 +206,8 @@ function initGameGlass() {
       console.log('Font loading failed, using fallback');
     }
     
-    // Видаляємо всі існуючі кульки зі сцени
-    for (let i = 0; i < balls.length; i++) {
-      const ball = balls[i];
-      scene.remove(ball.mesh);
-      // Звільняємо текстуру та матеріал
-      if (ball.mesh.material.map) {
-        ball.mesh.material.map.dispose();
-      }
-      ball.mesh.material.dispose();
-    }
-    // Очищаємо масив
-    balls.length = 0;
-    
     // Створюємо велику кульку (85% від радіусу контейнера)
+    // Малі кулі залишаються на сцені
     const winBallRadius = containerRadius * 0.85;
     const winGeometry = new THREE.SphereGeometry(winBallRadius, 64, 64);
     const winTexture = createWinTexture();
@@ -398,8 +387,61 @@ function initGameGlass() {
       }
     }
 
+    // Видаляємо кульки, які стали занадто маленькими (сховалися в центр)
+    for (let i = balls.length - 1; i >= 0; i--) {
+      const ball = balls[i];
+      const currentScale = ball.mesh.scale.x;
+      if (currentScale < 0.05) {
+        scene.remove(ball.mesh);
+        if (ball.mesh.material.map) {
+          ball.mesh.material.map.dispose();
+        }
+        ball.mesh.material.dispose();
+        balls.splice(i, 1);
+      }
+    }
+
     for (let i = 0; i < balls.length; i++) {
       const ball = balls[i];
+      
+      // Якщо winBall існує - притягуємо малі кулі до центру
+      if (winBall !== null) {
+        const pullStrength = 0.03; // Сила притягування (вдвічі повільніше)
+        const shrinkSpeed = 0.008; // Швидкість зменшення (вдвічі повільніше)
+        
+        // Напрямок до центру
+        const distanceFromCenter = Math.sqrt(ball.x * ball.x + ball.y * ball.y + ball.z * ball.z);
+        if (distanceFromCenter > 1) {
+          const nx = -ball.x / distanceFromCenter;
+          const ny = -ball.y / distanceFromCenter;
+          const nz = -ball.z / distanceFromCenter;
+          
+          // Притягуємо до центру
+          ball.vx += nx * pullStrength * deltaTime * 60;
+          ball.vy += ny * pullStrength * deltaTime * 60;
+          ball.vz += nz * pullStrength * deltaTime * 60;
+          
+          // Сильне згасання для плавного руху
+          ball.vx *= 0.95;
+          ball.vy *= 0.95;
+          ball.vz *= 0.95;
+        }
+        
+        // Зменшуємо розмір кульки
+        const currentScale = ball.mesh.scale.x;
+        const newScale = Math.max(0.01, currentScale - shrinkSpeed * deltaTime);
+        ball.mesh.scale.set(newScale, newScale, newScale);
+        
+        // Оновлення позиції
+        ball.x += ball.vx * deltaTime;
+        ball.y += ball.vy * deltaTime;
+        ball.z += ball.vz * deltaTime;
+        
+        // Оновлюємо позицію меша
+        ball.mesh.position.set(ball.x, ball.y, ball.z);
+        
+        continue; // Пропускаємо решту фізики
+      }
 
       // Оновлення позиції
       ball.x += ball.vx * deltaTime;
@@ -415,32 +457,39 @@ function initGameGlass() {
       
       // Застосування вітру (якщо активний)
       if (windActive) {
-        // Вітер дме тонкою струєю з центру низу до центру верху
-        // Обчислюємо відстань від центру в XZ площині (горизонтальна відстань)
+        // Вітер дме з центру низу до верху з турбулентністю
         const distanceFromCenterXZ = Math.sqrt(ball.x * ball.x + ball.z * ball.z);
         
-        // Інтенсивність вітру залежить від відстані від центру - чим ближче до центру, тим сильніше
-        // Використовуємо гаусову функцію для плавного спаду сили вітру від центру
+        // Інтенсивність вітру - ширша зона впливу
         const distanceNormalized = distanceFromCenterXZ / windStreamRadius;
-        const windIntensityXZ = Math.max(0, Math.exp(-distanceNormalized * distanceNormalized * 2));
+        const windIntensityXZ = Math.max(0, Math.exp(-distanceNormalized * distanceNormalized * 1.5));
         
-        // Також сила вітру залежить від вертикальної позиції - сильніша внизу, слабша вгорі
+        // Сила вітру залежить від вертикальної позиції
         const windIntensityY = Math.max(0, 1 - (ball.y + containerRadius) / (containerRadius * 2));
         
         // Комбінована інтенсивність вітру
         const windIntensity = windIntensityXZ * windIntensityY;
         
-        // Вітер дме строго вгору (по Y), без горизонтального розкидання
+        // Вітер дме вгору (по Y)
         const windForceY = windDirection.y * windStrength * windIntensity;
         
         // Нормалізована висота кульки (0 = низ, 1 = верх)
         const normalizedHeight = (ball.y + containerRadius) / (containerRadius * 2);
         
-        // Додаткова сила, яка притягує кульки до центру струї (якщо вони не в центрі)
-        // Це створює ефект, що кульки збираються до центру струї
-        // Але тільки в нижній частині сфери
-        if (distanceFromCenterXZ > 0.1 && normalizedHeight < 0.6) {
-          const pullToCenterStrength = 0.3 * windIntensityY; // Сила притягання до центру
+        // ТУРБУЛЕНТНІСТЬ - випадкове розкидання в сторони
+        // Використовуємо sin/cos з часом для створення хаотичного руху
+        const time = performance.now() * 0.001;
+        const turbulenceX = Math.sin(time * 3 + ball.x * 0.1 + i * 1.7) * windTurbulence;
+        const turbulenceZ = Math.cos(time * 2.5 + ball.z * 0.1 + i * 2.3) * windTurbulence;
+        
+        // Застосовуємо турбулентність (сильніша в середині висоти)
+        const turbulenceIntensity = Math.sin(normalizedHeight * Math.PI) * windIntensity;
+        ball.vx += turbulenceX * turbulenceIntensity * deltaTime;
+        ball.vz += turbulenceZ * turbulenceIntensity * deltaTime;
+        
+        // Слабке притягування до центру в нижній частині
+        if (distanceFromCenterXZ > 0.1 && normalizedHeight < 0.4) {
+          const pullToCenterStrength = 0.2 * windIntensityY;
           const pullX = (-ball.x / distanceFromCenterXZ) * pullToCenterStrength;
           const pullZ = (-ball.z / distanceFromCenterXZ) * pullToCenterStrength;
           

@@ -25,8 +25,9 @@ function initGameGlass() {
 
   // Стан анімації вітру
   var windActive = false;
-  var windStrength = 2.5; // Сила вітру
-  var windStreamRadius = 80; // Радіус струї вітру (тонка струя з центру)
+  var windStrength = 4.0; // Сила вітру (збільшено вдвічі)
+  var windStreamRadius = 120; // Радіус струї вітру (збільшено для ширшого ефекту)
+  var windTurbulence = 10.5; // Сила турбулентності (розкидання в сторони)
   var windDirection = {
     x: 0,
     y: 1,
@@ -208,7 +209,7 @@ function initGameGlass() {
   } // Геометрія для кульок (спільна для всіх)
   function _createWinBall() {
     _createWinBall = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-      var _i4, ball, winBallRadius, winGeometry, winTexture, winMaterial, winMesh;
+      var winBallRadius, winGeometry, winTexture, winMaterial, winMesh;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
@@ -223,20 +224,8 @@ function initGameGlass() {
             _context.t0 = _context["catch"](0);
             console.log('Font loading failed, using fallback');
           case 8:
-            // Видаляємо всі існуючі кульки зі сцени
-            for (_i4 = 0; _i4 < balls.length; _i4++) {
-              ball = balls[_i4];
-              scene.remove(ball.mesh);
-              // Звільняємо текстуру та матеріал
-              if (ball.mesh.material.map) {
-                ball.mesh.material.map.dispose();
-              }
-              ball.mesh.material.dispose();
-            }
-            // Очищаємо масив
-            balls.length = 0;
-
             // Створюємо велику кульку (85% від радіусу контейнера)
+            // Малі кулі залишаються на сцені
             winBallRadius = containerRadius * 0.85;
             winGeometry = new THREE.SphereGeometry(winBallRadius, 64, 64);
             winTexture = createWinTexture();
@@ -263,7 +252,7 @@ function initGameGlass() {
             // Запускаємо анімацію появи (scale animation)
             winBallFadeInStartTime = performance.now();
             return _context.abrupt("return", winMesh);
-          case 24:
+          case 22:
           case "end":
             return _context.stop();
         }
@@ -421,53 +410,112 @@ function initGameGlass() {
         winBallFadeInStartTime = null;
       }
     }
-    for (var _i = 0; _i < balls.length; _i++) {
+
+    // Видаляємо кульки, які стали занадто маленькими (сховалися в центр)
+    for (var _i = balls.length - 1; _i >= 0; _i--) {
       var ball = balls[_i];
+      var currentScale = ball.mesh.scale.x;
+      if (currentScale < 0.05) {
+        scene.remove(ball.mesh);
+        if (ball.mesh.material.map) {
+          ball.mesh.material.map.dispose();
+        }
+        ball.mesh.material.dispose();
+        balls.splice(_i, 1);
+      }
+    }
+    for (var _i2 = 0; _i2 < balls.length; _i2++) {
+      var _ball = balls[_i2];
+
+      // Якщо winBall існує - притягуємо малі кулі до центру
+      if (winBall !== null) {
+        var pullStrength = 0.03; // Сила притягування (вдвічі повільніше)
+        var shrinkSpeed = 0.008; // Швидкість зменшення (вдвічі повільніше)
+
+        // Напрямок до центру
+        var _distanceFromCenter = Math.sqrt(_ball.x * _ball.x + _ball.y * _ball.y + _ball.z * _ball.z);
+        if (_distanceFromCenter > 1) {
+          var nx = -_ball.x / _distanceFromCenter;
+          var ny = -_ball.y / _distanceFromCenter;
+          var nz = -_ball.z / _distanceFromCenter;
+
+          // Притягуємо до центру
+          _ball.vx += nx * pullStrength * deltaTime * 60;
+          _ball.vy += ny * pullStrength * deltaTime * 60;
+          _ball.vz += nz * pullStrength * deltaTime * 60;
+
+          // Сильне згасання для плавного руху
+          _ball.vx *= 0.95;
+          _ball.vy *= 0.95;
+          _ball.vz *= 0.95;
+        }
+
+        // Зменшуємо розмір кульки
+        var _currentScale = _ball.mesh.scale.x;
+        var _newScale = Math.max(0.01, _currentScale - shrinkSpeed * deltaTime);
+        _ball.mesh.scale.set(_newScale, _newScale, _newScale);
+
+        // Оновлення позиції
+        _ball.x += _ball.vx * deltaTime;
+        _ball.y += _ball.vy * deltaTime;
+        _ball.z += _ball.vz * deltaTime;
+
+        // Оновлюємо позицію меша
+        _ball.mesh.position.set(_ball.x, _ball.y, _ball.z);
+        continue; // Пропускаємо решту фізики
+      }
 
       // Оновлення позиції
-      ball.x += ball.vx * deltaTime;
-      ball.y += ball.vy * deltaTime;
-      ball.z += ball.vz * deltaTime;
+      _ball.x += _ball.vx * deltaTime;
+      _ball.y += _ball.vy * deltaTime;
+      _ball.z += _ball.vz * deltaTime;
 
       // Перевірка чи кулька на дні (нижня частина сфери)
-      var _distanceFromCenter = Math.sqrt(ball.x * ball.x + ball.y * ball.y + ball.z * ball.z);
-      var isOnBottom = ball.y < -containerRadius * 0.3 && _distanceFromCenter > containerRadius * 0.7;
+      var _distanceFromCenter2 = Math.sqrt(_ball.x * _ball.x + _ball.y * _ball.y + _ball.z * _ball.z);
+      var isOnBottom = _ball.y < -containerRadius * 0.3 && _distanceFromCenter2 > containerRadius * 0.7;
 
       // Визначення моменту приземлення (кулька тільки що досягла дна)
-      var justLanded = isOnBottom && !ball.wasOnBottom && ball.previousVy < 0;
+      var justLanded = isOnBottom && !_ball.wasOnBottom && _ball.previousVy < 0;
 
       // Застосування вітру (якщо активний)
       if (windActive) {
-        // Вітер дме тонкою струєю з центру низу до центру верху
-        // Обчислюємо відстань від центру в XZ площині (горизонтальна відстань)
-        var distanceFromCenterXZ = Math.sqrt(ball.x * ball.x + ball.z * ball.z);
+        // Вітер дме з центру низу до верху з турбулентністю
+        var distanceFromCenterXZ = Math.sqrt(_ball.x * _ball.x + _ball.z * _ball.z);
 
-        // Інтенсивність вітру залежить від відстані від центру - чим ближче до центру, тим сильніше
-        // Використовуємо гаусову функцію для плавного спаду сили вітру від центру
+        // Інтенсивність вітру - ширша зона впливу
         var distanceNormalized = distanceFromCenterXZ / windStreamRadius;
-        var windIntensityXZ = Math.max(0, Math.exp(-distanceNormalized * distanceNormalized * 2));
+        var windIntensityXZ = Math.max(0, Math.exp(-distanceNormalized * distanceNormalized * 1.5));
 
-        // Також сила вітру залежить від вертикальної позиції - сильніша внизу, слабша вгорі
-        var windIntensityY = Math.max(0, 1 - (ball.y + containerRadius) / (containerRadius * 2));
+        // Сила вітру залежить від вертикальної позиції
+        var windIntensityY = Math.max(0, 1 - (_ball.y + containerRadius) / (containerRadius * 2));
 
         // Комбінована інтенсивність вітру
         var windIntensity = windIntensityXZ * windIntensityY;
 
-        // Вітер дме строго вгору (по Y), без горизонтального розкидання
+        // Вітер дме вгору (по Y)
         var windForceY = windDirection.y * windStrength * windIntensity;
 
         // Нормалізована висота кульки (0 = низ, 1 = верх)
-        var normalizedHeight = (ball.y + containerRadius) / (containerRadius * 2);
+        var normalizedHeight = (_ball.y + containerRadius) / (containerRadius * 2);
 
-        // Додаткова сила, яка притягує кульки до центру струї (якщо вони не в центрі)
-        // Це створює ефект, що кульки збираються до центру струї
-        // Але тільки в нижній частині сфери
-        if (distanceFromCenterXZ > 0.1 && normalizedHeight < 0.6) {
-          var pullToCenterStrength = 0.3 * windIntensityY; // Сила притягання до центру
-          var pullX = -ball.x / distanceFromCenterXZ * pullToCenterStrength;
-          var pullZ = -ball.z / distanceFromCenterXZ * pullToCenterStrength;
-          ball.vx += pullX * deltaTime;
-          ball.vz += pullZ * deltaTime;
+        // ТУРБУЛЕНТНІСТЬ - випадкове розкидання в сторони
+        // Використовуємо sin/cos з часом для створення хаотичного руху
+        var time = performance.now() * 0.001;
+        var turbulenceX = Math.sin(time * 3 + _ball.x * 0.1 + _i2 * 1.7) * windTurbulence;
+        var turbulenceZ = Math.cos(time * 2.5 + _ball.z * 0.1 + _i2 * 2.3) * windTurbulence;
+
+        // Застосовуємо турбулентність (сильніша в середині висоти)
+        var turbulenceIntensity = Math.sin(normalizedHeight * Math.PI) * windIntensity;
+        _ball.vx += turbulenceX * turbulenceIntensity * deltaTime;
+        _ball.vz += turbulenceZ * turbulenceIntensity * deltaTime;
+
+        // Слабке притягування до центру в нижній частині
+        if (distanceFromCenterXZ > 0.1 && normalizedHeight < 0.4) {
+          var pullToCenterStrength = 0.2 * windIntensityY;
+          var pullX = -_ball.x / distanceFromCenterXZ * pullToCenterStrength;
+          var pullZ = -_ball.z / distanceFromCenterXZ * pullToCenterStrength;
+          _ball.vx += pullX * deltaTime;
+          _ball.vz += pullZ * deltaTime;
         }
 
         // Заокруглення вітру біля верху сфери
@@ -477,66 +525,66 @@ function initGameGlass() {
           var spreadIntensity = Math.pow((normalizedHeight - 0.5) * 2, 2); // Квадратична залежність для плавності
 
           // Напрямок від центру (відхилення від центру)
-          var spreadDirectionX = ball.x / distanceFromCenterXZ;
-          var spreadDirectionZ = ball.z / distanceFromCenterXZ;
+          var spreadDirectionX = _ball.x / distanceFromCenterXZ;
+          var spreadDirectionZ = _ball.z / distanceFromCenterXZ;
 
           // Сила розходження залежить від інтенсивності вітру та висоти
           var spreadStrength = windIntensity * spreadIntensity * 1.5;
 
           // Застосовуємо силу розходження
-          ball.vx += spreadDirectionX * spreadStrength * deltaTime;
-          ball.vz += spreadDirectionZ * spreadStrength * deltaTime;
+          _ball.vx += spreadDirectionX * spreadStrength * deltaTime;
+          _ball.vz += spreadDirectionZ * spreadStrength * deltaTime;
 
           // Зменшуємо вертикальну силу вітру вгорі для плавного переходу
           var verticalReduction = 1 - spreadIntensity * 0.5;
-          ball.vy += windForceY * verticalReduction * deltaTime;
+          _ball.vy += windForceY * verticalReduction * deltaTime;
         } else {
           // Застосовуємо силу вітру строго вгору (в нижній та середній частині)
-          ball.vy += windForceY * deltaTime;
+          _ball.vy += windForceY * deltaTime;
         }
       }
 
       // Гравітація до низу канвасу (по осі Y вниз) - тільки якщо кулька не на дні і вітер не активний
       if (!isOnBottom && !windActive) {
-        ball.vy -= gravity * deltaTime;
+        _ball.vy -= gravity * deltaTime;
       } else if (!isOnBottom && windActive) {
         // Якщо вітер активний, гравітація слабша
-        ball.vy -= gravity * 0.3 * deltaTime;
+        _ball.vy -= gravity * 0.3 * deltaTime;
       } else {
         // Якщо кулька на дні - не застосовуємо гравітацію
         // Застосовуємо сильне тертя тільки якщо вітер не активний
         if (!windActive) {
           var bottomFriction = 0.7; // Дуже сильне тертя для кульок на дні
-          ball.vx *= bottomFriction;
-          ball.vy *= bottomFriction;
-          ball.vz *= bottomFriction;
+          _ball.vx *= bottomFriction;
+          _ball.vy *= bottomFriction;
+          _ball.vz *= bottomFriction;
 
           // Резке зменшення обертання в момент приземлення
           if (justLanded) {
             var landingRotationDamping = 0.3; // Сильне зменшення обертання при приземленні
-            ball.rotX *= landingRotationDamping;
-            ball.rotY *= landingRotationDamping;
-            ball.rotZ *= landingRotationDamping;
+            _ball.rotX *= landingRotationDamping;
+            _ball.rotY *= landingRotationDamping;
+            _ball.rotZ *= landingRotationDamping;
           } else {
             // Постійне зменшення обертання на дні (тертя об поверхню)
             var rotationFriction = 0.85; // Тертя для обертання на дні
-            ball.rotX *= rotationFriction;
-            ball.rotY *= rotationFriction;
-            ball.rotZ *= rotationFriction;
+            _ball.rotX *= rotationFriction;
+            _ball.rotY *= rotationFriction;
+            _ball.rotZ *= rotationFriction;
           }
 
           // Якщо швидкість дуже мала - повністю зупиняємо
-          var _speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
+          var _speed = Math.sqrt(_ball.vx * _ball.vx + _ball.vy * _ball.vy + _ball.vz * _ball.vz);
           if (_speed < 0.05) {
-            ball.vx = 0;
-            ball.vy = 0;
-            ball.vz = 0;
+            _ball.vx = 0;
+            _ball.vy = 0;
+            _ball.vz = 0;
             // Також зупиняємо обертання, якщо кулька повністю зупинилася
-            var rotationSpeed = Math.sqrt(ball.rotX * ball.rotX + ball.rotY * ball.rotY + ball.rotZ * ball.rotZ);
+            var rotationSpeed = Math.sqrt(_ball.rotX * _ball.rotX + _ball.rotY * _ball.rotY + _ball.rotZ * _ball.rotZ);
             if (rotationSpeed < 0.01) {
-              ball.rotX = 0;
-              ball.rotY = 0;
-              ball.rotZ = 0;
+              _ball.rotX = 0;
+              _ball.rotY = 0;
+              _ball.rotZ = 0;
             }
           }
         }
@@ -544,74 +592,74 @@ function initGameGlass() {
 
       // Колізія зі сферичною стінкою контейнера (3D)
       var collisionRadius = containerRadius - ballRadius;
-      if (_distanceFromCenter > collisionRadius) {
+      if (_distanceFromCenter2 > collisionRadius) {
         // Обчислюємо нормаль до стінки (напрямок від центру до кульки в 3D)
-        var normalX = ball.x / _distanceFromCenter;
-        var normalY = ball.y / _distanceFromCenter;
-        var normalZ = ball.z / _distanceFromCenter;
+        var normalX = _ball.x / _distanceFromCenter2;
+        var normalY = _ball.y / _distanceFromCenter2;
+        var normalZ = _ball.z / _distanceFromCenter2;
 
         // Корекція позиції - повертаємо кульку всередину сфери
-        ball.x = normalX * collisionRadius;
-        ball.y = normalY * collisionRadius;
-        ball.z = normalZ * collisionRadius;
+        _ball.x = normalX * collisionRadius;
+        _ball.y = normalY * collisionRadius;
+        _ball.z = normalZ * collisionRadius;
 
         // Відбиття швидкості від стінки (тільки якщо не на дні)
         if (!isOnBottom) {
-          var outwardVelocity = ball.vx * normalX + ball.vy * normalY + ball.vz * normalZ;
+          var outwardVelocity = _ball.vx * normalX + _ball.vy * normalY + _ball.vz * normalZ;
           if (outwardVelocity > 0) {
-            ball.vx -= 2 * outwardVelocity * normalX;
-            ball.vy -= 2 * outwardVelocity * normalY;
-            ball.vz -= 2 * outwardVelocity * normalZ;
+            _ball.vx -= 2 * outwardVelocity * normalX;
+            _ball.vy -= 2 * outwardVelocity * normalY;
+            _ball.vz -= 2 * outwardVelocity * normalZ;
             var bounceDamping = 0.9;
-            ball.vx *= bounceDamping;
-            ball.vy *= bounceDamping;
-            ball.vz *= bounceDamping;
+            _ball.vx *= bounceDamping;
+            _ball.vy *= bounceDamping;
+            _ball.vz *= bounceDamping;
           }
         } else {
           // На дні - зупиняємо швидкість назовні від стінки
-          var _outwardVelocity = ball.vx * normalX + ball.vy * normalY + ball.vz * normalZ;
+          var _outwardVelocity = _ball.vx * normalX + _ball.vy * normalY + _ball.vz * normalZ;
           if (_outwardVelocity > 0) {
-            ball.vx -= _outwardVelocity * normalX;
-            ball.vy -= _outwardVelocity * normalY;
-            ball.vz -= _outwardVelocity * normalZ;
+            _ball.vx -= _outwardVelocity * normalX;
+            _ball.vy -= _outwardVelocity * normalY;
+            _ball.vz -= _outwardVelocity * normalZ;
           }
         }
       }
 
       // ДОДАТКОВА перевірка - якщо кулька все ще за межами (на випадок помилок)
-      var finalDistance = Math.sqrt(ball.x * ball.x + ball.y * ball.y + ball.z * ball.z);
+      var finalDistance = Math.sqrt(_ball.x * _ball.x + _ball.y * _ball.y + _ball.z * _ball.z);
       if (finalDistance + ballRadius > containerRadius) {
         var _scale = maxSafeRadius / finalDistance;
-        ball.x *= _scale;
-        ball.y *= _scale;
-        ball.z *= _scale;
+        _ball.x *= _scale;
+        _ball.y *= _scale;
+        _ball.z *= _scale;
         // Зупинити швидкість, якщо кулька намагається вийти
-        var _normalX = ball.x / finalDistance;
-        var _normalY = ball.y / finalDistance;
-        var _normalZ = ball.z / finalDistance;
-        var outwardSpeed = ball.vx * _normalX + ball.vy * _normalY + ball.vz * _normalZ;
+        var _normalX = _ball.x / finalDistance;
+        var _normalY = _ball.y / finalDistance;
+        var _normalZ = _ball.z / finalDistance;
+        var outwardSpeed = _ball.vx * _normalX + _ball.vy * _normalY + _ball.vz * _normalZ;
         if (outwardSpeed > 0) {
-          ball.vx -= outwardSpeed * _normalX;
-          ball.vy -= outwardSpeed * _normalY;
-          ball.vz -= outwardSpeed * _normalZ;
+          _ball.vx -= outwardSpeed * _normalX;
+          _ball.vy -= outwardSpeed * _normalY;
+          _ball.vz -= outwardSpeed * _normalZ;
         }
       }
 
       // Колізії між кульками
-      for (var _j = _i + 1; _j < balls.length; _j++) {
+      for (var _j = _i2 + 1; _j < balls.length; _j++) {
         var otherBall = balls[_j];
-        var _dx = ball.x - otherBall.x;
-        var _dy = ball.y - otherBall.y;
-        var _dz = ball.z - otherBall.z;
+        var _dx = _ball.x - otherBall.x;
+        var _dy = _ball.y - otherBall.y;
+        var _dz = _ball.z - otherBall.z;
         var distance = Math.sqrt(_dx * _dx + _dy * _dy + _dz * _dz);
         var minDistance = ballRadius * 2; // Мінімальна відстань між центрами кульок
 
         // Завжди розділяємо кульки, якщо вони занадто близько
         if (distance < minDistance && distance > 0.001) {
           // Нормалізуємо вектор напрямку
-          var nx = _dx / distance;
-          var ny = _dy / distance;
-          var nz = _dz / distance;
+          var _nx = _dx / distance;
+          var _ny = _dy / distance;
+          var _nz = _dz / distance;
 
           // Обчислюємо перетин (overlap)
           var overlap = minDistance - distance;
@@ -619,12 +667,12 @@ function initGameGlass() {
           // Сильне розділення - розсуваємо кульки, щоб вони не перетиналися
           // Використовуємо більший коефіцієнт для швидшого розділення
           var separationStrength = 1.2; // Трохи більше 1.0 для гарантованого розділення
-          var separationX = nx * overlap * 0.5 * separationStrength;
-          var separationY = ny * overlap * 0.5 * separationStrength;
-          var separationZ = nz * overlap * 0.5 * separationStrength;
-          ball.x += separationX;
-          ball.y += separationY;
-          ball.z += separationZ;
+          var separationX = _nx * overlap * 0.5 * separationStrength;
+          var separationY = _ny * overlap * 0.5 * separationStrength;
+          var separationZ = _nz * overlap * 0.5 * separationStrength;
+          _ball.x += separationX;
+          _ball.y += separationY;
+          _ball.z += separationZ;
           otherBall.x -= separationX;
           otherBall.y -= separationY;
           otherBall.z -= separationZ;
@@ -635,12 +683,12 @@ function initGameGlass() {
           var bothOnBottom = isOnBottom && otherIsOnBottom;
 
           // Відносна швидкість для відбиття
-          var relativeVx = ball.vx - otherBall.vx;
-          var relativeVy = ball.vy - otherBall.vy;
-          var relativeVz = ball.vz - otherBall.vz;
+          var relativeVx = _ball.vx - otherBall.vx;
+          var relativeVy = _ball.vy - otherBall.vy;
+          var relativeVz = _ball.vz - otherBall.vz;
 
           // Швидкість уздовж нормалі
-          var speedAlongNormal = relativeVx * nx + relativeVy * ny + relativeVz * nz;
+          var speedAlongNormal = relativeVx * _nx + relativeVy * _ny + relativeVz * _nz;
 
           // Відбиття тільки якщо кульки рухаються одна до одної
           if (speedAlongNormal > 0) {
@@ -651,35 +699,35 @@ function initGameGlass() {
             }
 
             var impulse = (1 + restitution) * speedAlongNormal / 2;
-            ball.vx -= impulse * nx;
+            _ball.vx -= impulse * _nx;
             // Якщо на дні - не відбиваємо вертикальну швидкість (Y)
             if (!isOnBottom) {
-              ball.vy -= impulse * ny;
+              _ball.vy -= impulse * _ny;
             }
-            ball.vz -= impulse * nz;
-            otherBall.vx += impulse * nx;
+            _ball.vz -= impulse * _nz;
+            otherBall.vx += impulse * _nx;
             // Якщо на дні - не відбиваємо вертикальну швидкість (Y)
             if (!otherIsOnBottom) {
-              otherBall.vy += impulse * ny;
+              otherBall.vy += impulse * _ny;
             }
-            otherBall.vz += impulse * nz;
+            otherBall.vz += impulse * _nz;
 
             // Додаткове згасання на дні - майже повна зупинка
             if (bothOnBottom) {
-              ball.vx *= 0.5;
-              ball.vy *= 0.5;
-              ball.vz *= 0.5;
+              _ball.vx *= 0.5;
+              _ball.vy *= 0.5;
+              _ball.vz *= 0.5;
               otherBall.vx *= 0.5;
               otherBall.vy *= 0.5;
               otherBall.vz *= 0.5;
 
               // Якщо швидкість дуже мала - повністю зупиняємо
-              var ballSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
+              var ballSpeed = Math.sqrt(_ball.vx * _ball.vx + _ball.vy * _ball.vy + _ball.vz * _ball.vz);
               var otherBallSpeed = Math.sqrt(otherBall.vx * otherBall.vx + otherBall.vy * otherBall.vy + otherBall.vz * otherBall.vz);
               if (ballSpeed < 0.05) {
-                ball.vx = 0;
-                ball.vy = 0;
-                ball.vz = 0;
+                _ball.vx = 0;
+                _ball.vy = 0;
+                _ball.vz = 0;
               }
               if (otherBallSpeed < 0.05) {
                 otherBall.vx = 0;
@@ -692,37 +740,37 @@ function initGameGlass() {
       }
 
       // ФІНАЛЬНА перевірка після всіх обчислень - гарантуємо, що кулька всередині сферичного контейнера (3D)
-      var finalCheckDistance = Math.sqrt(ball.x * ball.x + ball.y * ball.y + ball.z * ball.z);
+      var finalCheckDistance = Math.sqrt(_ball.x * _ball.x + _ball.y * _ball.y + _ball.z * _ball.z);
       if (finalCheckDistance + ballRadius > containerRadius) {
         var _safeRadius = containerRadius - ballRadius - 0.1;
         var _scale2 = _safeRadius / finalCheckDistance;
-        ball.x *= _scale2;
-        ball.y *= _scale2;
-        ball.z *= _scale2;
+        _ball.x *= _scale2;
+        _ball.y *= _scale2;
+        _ball.z *= _scale2;
 
         // Зупинити рух назовні від стінки
-        var _normalX2 = ball.x / finalCheckDistance;
-        var _normalY2 = ball.y / finalCheckDistance;
-        var _normalZ2 = ball.z / finalCheckDistance;
-        var _outwardSpeed = ball.vx * _normalX2 + ball.vy * _normalY2 + ball.vz * _normalZ2;
+        var _normalX2 = _ball.x / finalCheckDistance;
+        var _normalY2 = _ball.y / finalCheckDistance;
+        var _normalZ2 = _ball.z / finalCheckDistance;
+        var _outwardSpeed = _ball.vx * _normalX2 + _ball.vy * _normalY2 + _ball.vz * _normalZ2;
         if (_outwardSpeed > 0) {
-          ball.vx -= _outwardSpeed * _normalX2;
-          ball.vy -= _outwardSpeed * _normalY2;
-          ball.vz -= _outwardSpeed * _normalZ2;
+          _ball.vx -= _outwardSpeed * _normalX2;
+          _ball.vy -= _outwardSpeed * _normalY2;
+          _ball.vz -= _outwardSpeed * _normalZ2;
         }
       }
 
       // Застосувати згасання (тільки якщо кулька не на дні або вітер активний)
       if (!isOnBottom || windActive) {
-        ball.vx *= damping;
-        ball.vy *= damping;
-        ball.vz *= damping;
+        _ball.vx *= damping;
+        _ball.vy *= damping;
+        _ball.vz *= damping;
       }
 
       // Обчислення кутової швидкості на основі лінійної швидкості
       // Для сфери, що котиться: кутова швидкість = лінійна швидкість / радіус
       // Обертання навколо різних осей залежить від напрямку руху
-      var linearSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy + ball.vz * ball.vz);
+      var linearSpeed = Math.sqrt(_ball.vx * _ball.vx + _ball.vy * _ball.vy + _ball.vz * _ball.vz);
       if (linearSpeed > 0.001) {
         // Кутова швидкість навколо кожної осі залежить від напрямку руху
         // Для сфери, що котиться без ковзання:
@@ -733,47 +781,47 @@ function initGameGlass() {
 
         // Обертання навколо осі X (пропорційно до руху по Y та Z)
         // Використовуємо векторний добуток для правильного напрямку обертання
-        var rotXSpeed = (ball.vz - ball.vy * 0.3) / ballRadius;
+        var rotXSpeed = (_ball.vz - _ball.vy * 0.3) / ballRadius;
 
         // Обертання навколо осі Y (пропорційно до руху по X та Z)
-        var rotYSpeed = (ball.vx - ball.vz * 0.3) / ballRadius;
+        var rotYSpeed = (_ball.vx - _ball.vz * 0.3) / ballRadius;
 
         // Обертання навколо осі Z (пропорційно до руху по X та Y)
-        var rotZSpeed = (ball.vy - ball.vx * 0.3) / ballRadius;
+        var rotZSpeed = (_ball.vy - _ball.vx * 0.3) / ballRadius;
 
         // Оновлюємо кути обертання
-        ball.rotX += rotXSpeed * deltaTime;
-        ball.rotY += rotYSpeed * deltaTime;
-        ball.rotZ += rotZSpeed * deltaTime;
+        _ball.rotX += rotXSpeed * deltaTime;
+        _ball.rotY += rotYSpeed * deltaTime;
+        _ball.rotZ += rotZSpeed * deltaTime;
 
         // Застосувати згасання до кутової швидкості
         if (!isOnBottom || windActive) {
-          ball.rotX *= damping;
-          ball.rotY *= damping;
-          ball.rotZ *= damping;
+          _ball.rotX *= damping;
+          _ball.rotY *= damping;
+          _ball.rotZ *= damping;
         } else {
           // Якщо кулька на дні і вітер не активний - сильніше згасання обертання
           var bottomRotationDamping = 0.85; // Сильніше згасання обертання на дні
-          ball.rotX *= bottomRotationDamping;
-          ball.rotY *= bottomRotationDamping;
-          ball.rotZ *= bottomRotationDamping;
+          _ball.rotX *= bottomRotationDamping;
+          _ball.rotY *= bottomRotationDamping;
+          _ball.rotZ *= bottomRotationDamping;
         }
       } else {
         // Якщо кулька майже не рухається, зменшуємо обертання
-        ball.rotX *= 0.95;
-        ball.rotY *= 0.95;
-        ball.rotZ *= 0.95;
+        _ball.rotX *= 0.95;
+        _ball.rotY *= 0.95;
+        _ball.rotZ *= 0.95;
       }
 
       // Оновити стан для наступного кадру
-      ball.wasOnBottom = isOnBottom;
-      ball.previousVy = ball.vy;
+      _ball.wasOnBottom = isOnBottom;
+      _ball.previousVy = _ball.vy;
 
       // Оновити позицію та обертання меша в Three.js
-      ball.mesh.position.set(ball.x, ball.y, ball.z);
-      ball.mesh.rotation.x = ball.rotX;
-      ball.mesh.rotation.y = ball.rotY;
-      ball.mesh.rotation.z = ball.rotZ;
+      _ball.mesh.position.set(_ball.x, _ball.y, _ball.z);
+      _ball.mesh.rotation.x = _ball.rotX;
+      _ball.mesh.rotation.y = _ball.rotY;
+      _ball.mesh.rotation.z = _ball.rotZ;
     }
   }
 
@@ -829,7 +877,7 @@ function initGameGlass() {
     return _showWinBall.apply(this, arguments);
   }
   function createNewBalls() {
-    for (var _i2 = 0; _i2 < ballCount; _i2++) {
+    for (var _i3 = 0; _i3 < ballCount; _i3++) {
       var _randomNumber = Math.floor(Math.random() * 90) + 10;
       var _numberTexture = createNumberTexture(_randomNumber);
       var _sphereMaterial = new THREE.MeshStandardMaterial({
@@ -875,10 +923,10 @@ function initGameGlass() {
         _y = _r3 * Math.cos(_phi3);
         _z = _r3 * Math.sin(_phi3) * Math.sin(_theta3);
       }
-      var _distanceFromCenter2 = Math.sqrt(_x * _x + _y * _y + _z * _z);
-      if (_distanceFromCenter2 + ballRadius > containerRadius) {
+      var _distanceFromCenter3 = Math.sqrt(_x * _x + _y * _y + _z * _z);
+      if (_distanceFromCenter3 + ballRadius > containerRadius) {
         var _safeRadius2 = containerRadius - ballRadius - 1;
-        var _scale3 = _safeRadius2 / _distanceFromCenter2;
+        var _scale3 = _safeRadius2 / _distanceFromCenter3;
         _x *= _scale3;
         _y *= _scale3;
         _z *= _scale3;
@@ -925,8 +973,8 @@ function initGameGlass() {
     }
 
     // Видаляємо всі існуючі кульки
-    for (var _i3 = 0; _i3 < balls.length; _i3++) {
-      var ball = balls[_i3];
+    for (var _i4 = 0; _i4 < balls.length; _i4++) {
+      var ball = balls[_i4];
       scene.remove(ball.mesh);
       if (ball.mesh.material.map) {
         ball.mesh.material.map.dispose();
