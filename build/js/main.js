@@ -946,13 +946,29 @@ function initGameGlass() {
 
   // Handle window resize
   function handleResize() {
-    var width = Math.min(760, window.innerWidth);
+    // Використовуємо canvas.parentElement для визначення доступного розміру
+    var containerWidth = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth;
+    var width = Math.min(760, containerWidth, window.innerWidth);
     var height = width;
+
+    // Оновлюємо розмір renderer
     renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+
+    // Оновлюємо стилі canvas для правильного відображення
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
   }
   window.addEventListener('resize', handleResize);
+  // Додаємо orientationchange для мобільних пристроїв
+  window.addEventListener('orientationchange', function () {
+    // Затримка для коректного оновлення розмірів після зміни орієнтації
+    setTimeout(handleResize, 100);
+  });
+
+  // Початковий виклик з невеликою затримкою для Android
+  setTimeout(handleResize, 50);
   handleResize();
 
   // Запуск анімації
