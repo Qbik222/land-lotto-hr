@@ -177,6 +177,11 @@ function initGameGlass() {
         return texture;
       }
       
+      // Дзеркалимо canvas по горизонталі (для коректного відображення на сфері)
+      ctx.save();
+      ctx.translate(size, 0);
+      ctx.scale(-1, 1);
+      
       // Білий фон
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, size, size);
@@ -188,6 +193,8 @@ function initGameGlass() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(number.toString(), size / 2, size / 2);
+      
+      ctx.restore();
       
       // Копіюємо дані з спільного canvas в новий для текстури
       const imageData = ctx.getImageData(0, 0, size, size);
@@ -231,6 +238,11 @@ function initGameGlass() {
         texture.needsUpdate = true;
         return texture;
       }
+      
+      // Дзеркалимо canvas по горизонталі (для коректного відображення на сфері)
+      ctx.save();
+      ctx.translate(size, 0);
+      ctx.scale(-1, 1);
     
       const centerX = size / 2;
       const centerY = size / 2;
@@ -286,6 +298,8 @@ function initGameGlass() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('WIN', centerX, centerY);
+      
+      ctx.restore();
       
       // Копіюємо дані з спільного canvas
       const imageData = ctx.getImageData(0, 0, size, size);
