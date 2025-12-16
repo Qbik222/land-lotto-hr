@@ -117,52 +117,74 @@ function initGameGlass() {
 
   // Функція для створення текстури з числом
   function createNumberTexture(number) {
-    const canvas = document.createElement('canvas');
-    const size = 1024; // Розмір текстури (більший для кращої якості)
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) {
-      console.error('Canvas 2D context is not available');
-      // Повертаємо просту текстуру як fallback
+    try {
+      const canvas = document.createElement('canvas');
+      if (!canvas || !canvas.getContext) {
+        throw new Error('Canvas is not supported');
+      }
+      
+      const size = 1024; // Розмір текстури (більший для кращої якості)
+      canvas.width = size;
+      canvas.height = size;
+      
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx || typeof ctx.fillStyle === 'undefined') {
+        console.error('Canvas 2D context is not available or invalid');
+        // Повертаємо просту текстуру як fallback
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+      }
+      
+      // Білий фон
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Текст з числом - зменшений розмір шрифту
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 120px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(number.toString(), size / 2, size / 2);
+      
+      // Створюємо текстуру з canvas
       const texture = new THREE.CanvasTexture(canvas);
       texture.needsUpdate = true;
       return texture;
+    } catch (error) {
+      console.error('Error creating number texture:', error);
+      // Створюємо порожній canvas як fallback
+      const fallbackCanvas = document.createElement('canvas');
+      fallbackCanvas.width = 1024;
+      fallbackCanvas.height = 1024;
+      const texture = new THREE.CanvasTexture(fallbackCanvas);
+      texture.needsUpdate = true;
+      return texture;
     }
-    
-    // Білий фон
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
-    
-    // Текст з числом - зменшений розмір шрифту
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 120px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(number.toString(), size / 2, size / 2);
-    
-    // Створюємо текстуру з canvas
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
   }
 
   // Функція для створення текстури з текстом "WIN"
   function createWinTexture() {
-    const canvas = document.createElement('canvas');
-    const size = 1024; // Збільшений розмір для кращої якості
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) {
-      console.error('Canvas 2D context is not available');
-      // Повертаємо просту текстуру як fallback
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-      return texture;
-    }
+    try {
+      const canvas = document.createElement('canvas');
+      if (!canvas || !canvas.getContext) {
+        throw new Error('Canvas is not supported');
+      }
+      
+      const size = 1024; // Збільшений розмір для кращої якості
+      canvas.width = size;
+      canvas.height = size;
+      
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx || typeof ctx.fillStyle === 'undefined') {
+        console.error('Canvas 2D context is not available or invalid');
+        // Повертаємо просту текстуру як fallback
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+      }
     
     const centerX = size / 2;
     const centerY = size / 2;
@@ -218,11 +240,21 @@ function initGameGlass() {
     ctx.font = '400 30px "Lilita One", Arial, sans-serif'; // Lilita One, font-weight: 400
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('WIN', centerX, centerY);
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+      ctx.fillText('WIN', centerX, centerY);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    } catch (error) {
+      console.error('Error creating WIN texture:', error);
+      // Створюємо порожній canvas як fallback
+      const fallbackCanvas = document.createElement('canvas');
+      fallbackCanvas.width = 1024;
+      fallbackCanvas.height = 1024;
+      const texture = new THREE.CanvasTexture(fallbackCanvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
   }
 
   // Функція для створення великої кульки "WIN" в центрі
