@@ -12,19 +12,27 @@ const numberTextureCache = new Map();
 // Спільний canvas для генерації текстур (вирішує проблему ліміту canvas на iOS)
 let sharedCanvas = null;
 let sharedCtx = null;
+let sharedCanvasSize = 0;
 
 function getSharedCanvas(size) {
+  // Створюємо canvas якщо ще не існує
   if (!sharedCanvas) {
     sharedCanvas = document.createElement('canvas');
   }
-  sharedCanvas.width = size;
-  sharedCanvas.height = size;
   
-  if (!sharedCtx) {
-    sharedCtx = sharedCanvas.getContext('2d', { willReadFrequently: false });
+  // При зміні розміру потрібно перестворити контекст
+  const sizeChanged = sharedCanvasSize !== size;
+  if (sizeChanged) {
+    sharedCanvas.width = size;
+    sharedCanvas.height = size;
+    sharedCanvasSize = size;
+    // Контекст стає недійсним при зміні розміру - отримуємо заново
+    sharedCtx = sharedCanvas.getContext('2d', { willReadFrequently: true });
   }
   
+  // Повністю очищаємо canvas
   if (sharedCtx) {
+    sharedCtx.setTransform(1, 0, 0, 1, 0, 0); // Скидаємо трансформації
     sharedCtx.clearRect(0, 0, size, size);
   }
   
