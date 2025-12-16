@@ -937,6 +937,11 @@ function initGameGlass() {
   // Запуск анімації
   requestAnimationFrame(animate);
   
+  // Скидаємо сцену після першого рендеру для уникнення артефактів на iOS
+  setTimeout(() => {
+    resetScene();
+  }, 100);
+  
   // Функція для створення великої кульки "WIN"
   async function showWinBall() {
     // Якщо кулька вже існує, не створюємо нову
