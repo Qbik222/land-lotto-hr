@@ -123,6 +123,14 @@ function initGameGlass() {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     
+    if (!ctx) {
+      console.error('Canvas 2D context is not available');
+      // Повертаємо просту текстуру як fallback
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+    
     // Білий фон
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, size, size);
@@ -148,6 +156,14 @@ function initGameGlass() {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     
+    if (!ctx) {
+      console.error('Canvas 2D context is not available');
+      // Повертаємо просту текстуру як fallback
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+    
     const centerX = size / 2;
     const centerY = size / 2;
     
@@ -165,23 +181,35 @@ function initGameGlass() {
     const circleRadiusX = size * 0.05; // Горизонтальний радіус
     const circleRadiusY = size * 0.095; // Вертикальний радіус (більший для компенсації)
     
+    // Функція для малювання еліпса з fallback
+    const drawEllipse = (x, y, radiusX, radiusY) => {
+      ctx.beginPath();
+      if (ctx.ellipse) {
+        ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+      } else {
+        // Fallback для старих браузерів - використовуємо scale для перетворення кола
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(radiusX / radiusY, 1);
+        ctx.arc(0, 0, radiusY, 0, Math.PI * 2);
+        ctx.restore();
+      }
+    };
+    
     // Зовнішня біла обводка
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18, 0, 0, Math.PI * 2);
+    drawEllipse(centerX, centerY, circleRadiusX + 12, circleRadiusY + 18);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 6;
     ctx.stroke();
     
     // Ще одна зовнішня обводка (тонша)
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28, 0, 0, Math.PI * 2);
+    drawEllipse(centerX, centerY, circleRadiusX + 20, circleRadiusY + 28);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 3;
     ctx.stroke();
     
     // Білий еліпс (заливка)
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, circleRadiusX, circleRadiusY, 0, 0, Math.PI * 2);
+    drawEllipse(centerX, centerY, circleRadiusX, circleRadiusY);
     ctx.fillStyle = '#f0f0f0'; // Світло-сірий
     ctx.fill();
     
