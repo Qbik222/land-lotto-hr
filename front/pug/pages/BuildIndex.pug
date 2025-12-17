@@ -8,6 +8,7 @@ button.menu-btn menu
     button.popup-test-btn(data-popup="winPopup2" data-amount="500" data-currency="FS") Показати попап 2 (500 FS)
     button.popup-test-btn-close Закрити всі попапи
 .land
+    a#globalLink.global-link(href="https://www.favbet.hr/hr/loto/" aria-label="Favbet Loto")
     .land__left
         .land__logo
             img(src="./img/logo.png" alt="favbet")
@@ -16,7 +17,7 @@ button.menu-btn menu
             .land__title-item loto
             .land__title-item kugle i preuzmi
         .land__subtitle svoj bonus!
-        button.land__btn.btn Zaigraj
+        button.land__btn.btn#ctaPlayBtn Zaigraj
     .land__game
         canvas#gameGlass
     .land__char
@@ -29,24 +30,23 @@ button.menu-btn menu
             source(media="(max-width: 950px) and (orientation: landscape) and (max-height: 450px)" srcset="img/land-bottom.png")
             source(media="(max-width: 600px)" srcset="img/land-bottom-mob.png")
             img(src="img/land-bottom.png" alt="favbet")
-
-.overlay._opacity
-    .popup(data-popup="winPopup")
-        .popup__close
-        .popup__title ODLIČNO,osvojio si
-        .popup__prize 3000 €
-        .popup__icon
-            img(src='img/popup-icon.png' alt="favbet")
-        .popup__text Ostao ti je još #[span jedan] pokušaj
-        button.popup__btn.btn Odigraj ponovo
-    .popup(data-popup="winPopup2")
-        .popup__close
-        .popup__title Ti si prava zvijezda! <br> Tvoj dobitak je:
-        .popup__prize 500 FS
-        .popup__icon
-            img(src='img/popup-icon.png' alt="favbet")
-            .popup__icon-decor +3000 €
-        .popup__text Registriraj se, napravi deposit i uzmi bonus
-        button.popup__btn.btn UZMI BONUS
-        .popup__bottom *prvi deposit od min 7 € - 100 FS, drugi deposit od min 7 € još 100 FS
+    .overlay._opacity
+        .popup(data-popup="winPopup")
+            .popup__close
+            .popup__title ODLIČNO,osvojio si
+            .popup__prize 3000 €
+            .popup__icon
+                img(src='img/popup-icon.png' alt="favbet")
+            .popup__text Ostao ti je još #[span jedan] pokušaj
+            button.popup__btn.btn(data-action="closePopup") Odigraj ponovo
+        .popup(data-popup="winPopup2")
+            .popup__close
+            .popup__title Ti si prava zvijezda! <br> Tvoj dobitak je:
+            .popup__prize 500 FS
+            .popup__icon
+                img(src='img/popup-icon.png' alt="favbet")
+                .popup__icon-decor +3000 €
+            .popup__text Registriraj se, napravi deposit i uzmi bonus
+            a.popup__btn.btn(href="https://www.favbet.hr/hr/loto/") UZMI BONUS
+            .popup__bottom *prvi deposit od min 7 € - 100 FS, drugi deposit od min 7 € još 100 FS
 

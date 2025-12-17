@@ -1163,6 +1163,7 @@ function initGameGlass() {
 function openPopupByAttr(popupAttr, amount = null, currency = '€') {
     const overlay = document.querySelector('.overlay');
     const allPopups = document.querySelectorAll('.popup');
+    const globalLink = document.getElementById('globalLink');
     
     if (!overlay) return;
     
@@ -1196,6 +1197,11 @@ function openPopupByAttr(popupAttr, amount = null, currency = '€') {
         setTimeout(() => {
             targetPopup.classList.add('show');
         }, 10);
+    }
+
+    // Після показу другого попапу робимо посилання клікабельним на всю сторінку
+    if (popupAttr === 'winPopup2' && globalLink) {
+        globalLink.style.display = 'block';
     }
 }
 
@@ -1254,6 +1260,15 @@ function initPopups() {
 }
 initPopups();
 
+// Кнопка всередині попапу з data-action="closePopup"
+document.querySelectorAll('[data-action="closePopup"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeAllPopups();
+  });
+});
+
+
 
 // Тестове меню
 const menuBtn = document.querySelector(".menu-btn");
@@ -1304,6 +1319,28 @@ if (playWinSequenceBtn && windController && windController.playWinSequence) {
   });
 }
 
+// Кнопка на головному екрані (land__btn) — запуск WIN послідовності з урахуванням кліків
+const ctaPlayBtn = document.getElementById('ctaPlayBtn');
+let ctaPlayClickCount = 0;
+
+if (ctaPlayBtn && windController && windController.playWinSequence) {
+  ctaPlayBtn.addEventListener('click', () => {
+    ctaPlayBtn.style.pointerEvents = 'none';
+    setTimeout(() => {
+      ctaPlayBtn.style.pointerEvents = '';
+    }, 5000);
+    ctaPlayClickCount += 1; // рахуємо від 1
+
+    // На 1-й клік показуємо перший попап, на 2-й — другий; далі чергуємо
+    const isFirst = ctaPlayClickCount % 2 === 1;
+    const popupAttr = isFirst ? 'winPopup' : 'winPopup2';
+    const amount = isFirst ? 3000 : 500;
+    const currency = isFirst ? '€' : 'FS';
+
+    windController.playWinSequence(popupAttr, amount, currency);
+  });
+}
+
 // Кнопки для тестування попапів
 const popupTestButtons = document.querySelectorAll('.popup-test-btn');
 popupTestButtons.forEach(btn => {
@@ -1324,6 +1361,11 @@ const popupCloseBtn = document.querySelector('.popup-test-btn-close');
 if (popupCloseBtn) {
     popupCloseBtn.addEventListener('click', () => {
         closeAllPopups();
+        const globalLink = document.getElementById('globalLink');
+        if (globalLink) {
+            globalLink.style.display = 'none';
+        }
     });
 }
+
 
