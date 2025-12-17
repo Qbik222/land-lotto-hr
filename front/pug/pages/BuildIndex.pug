@@ -1,11 +1,11 @@
 button.menu-btn menu
 .menu-test.hide
-    button#playWinSequenceBtn.play-sequence-btn ▶ Запустити WIN послідовність
+    button#playWinSequenceBtn.play-sequence-btn(data-popup="winPopup" data-amount="3000" data-currency="€") ▶ Запустити WIN послідовність
     button#windToggleBtn.wind-toggle-btn Тест трясяння кульок
     button#showWinBallBtn.win-ball-btn Показати кульку WIN
     button#resetSceneBtn.reset-scene-btn Скинути сцену
-    button.popup-test-btn(data-popup="winPopup") Показати попап 1 (3000 €)
-    button.popup-test-btn(data-popup="winPopup2") Показати попап 2 (500 FS)
+    button.popup-test-btn(data-popup="winPopup" data-amount="3000" data-currency="€") Показати попап 1 (3000 €)
+    button.popup-test-btn(data-popup="winPopup2" data-amount="500" data-currency="FS") Показати попап 2 (500 FS)
     button.popup-test-btn-close Закрити всі попапи
 .land
     .land__left
@@ -25,8 +25,10 @@ button.menu-btn menu
             source(media="(max-width: 1050px)" srcset="img/char-tab.png")
             img(src="img/char.png" alt="favet")
         .land__char-bubble Tvoj trenutak sreće počinje ovdje!
-    .land__bottom
-        img(src="img/land-bottom.png" alt="favbet")
+    picture.land__bottom
+            source(media="(max-width: 950px) and (orientation: landscape) and (max-height: 450px)" srcset="img/land-bottom.png")
+            source(media="(max-width: 600px)" srcset="img/land-bottom-mob.png")
+            img(src="img/land-bottom.png" alt="favbet")
 
 .overlay._opacity
     .popup(data-popup="winPopup")

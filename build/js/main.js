@@ -1192,7 +1192,7 @@ function openPopupByAttr(popupAttr) {
   // Ховаємо всі попапи
   allPopups.forEach(function (p) {
     p.classList.remove('show');
-    p.style.display = 'none';
+    // p.style.display = 'none';
   });
 
   // Блокуємо скрол
@@ -1213,8 +1213,8 @@ function openPopupByAttr(popupAttr) {
       }
     }
 
-    // Показуємо попап
-    targetPopup.style.display = 'block';
+    // // Показуємо попап
+    // targetPopup.style.display = 'block';
     // Невелика затримка для анімації
     setTimeout(function () {
       targetPopup.classList.add('show');
@@ -1236,7 +1236,7 @@ function closeAllPopups() {
     overlay.classList.remove('show');
     overlay.classList.add('_opacity');
     allPopups.forEach(function (p) {
-      p.style.display = 'none';
+      p.classList.remove('show');
     });
     // Відновлюємо скрол
     document.body.style.overflow = 'auto';
@@ -1314,7 +1314,12 @@ if (resetSceneBtn && windController && windController.resetScene) {
 var playWinSequenceBtn = document.getElementById('playWinSequenceBtn');
 if (playWinSequenceBtn && windController && windController.playWinSequence) {
   playWinSequenceBtn.addEventListener('click', function () {
-    windController.playWinSequence('winPopup', 3000, '€');
+    var popupAttr = playWinSequenceBtn.getAttribute('data-popup') || 'winPopup';
+    var amountAttr = playWinSequenceBtn.getAttribute('data-amount');
+    var currencyAttr = playWinSequenceBtn.getAttribute('data-currency');
+    var amount = amountAttr ? Number(amountAttr) : null;
+    var currency = currencyAttr || '€';
+    windController.playWinSequence(popupAttr, amount, currency);
   });
 }
 
@@ -1323,15 +1328,12 @@ var popupTestButtons = document.querySelectorAll('.popup-test-btn');
 popupTestButtons.forEach(function (btn) {
   btn.addEventListener('click', function () {
     var popupAttr = btn.getAttribute('data-popup');
+    var amountAttr = btn.getAttribute('data-amount');
+    var currencyAttr = btn.getAttribute('data-currency');
     if (popupAttr) {
-      // Визначаємо значення залежно від попапу
-      if (popupAttr === 'winPopup') {
-        openPopupByAttr('winPopup', 3000, '€');
-      } else if (popupAttr === 'winPopup2') {
-        openPopupByAttr('winPopup2', 500, 'FS');
-      } else {
-        openPopupByAttr(popupAttr);
-      }
+      var amount = amountAttr ? Number(amountAttr) : null;
+      var currency = currencyAttr || '€';
+      openPopupByAttr(popupAttr, amount, currency);
     }
   });
 });

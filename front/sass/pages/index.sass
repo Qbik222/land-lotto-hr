@@ -90,6 +90,16 @@ body
       top: 50%
       transform: translate(-50%, -50%)
       z-index: 0
+      @media screen and (max-width: 1050px)
+        background: url("../img/bg-tab.png") no-repeat 0 0/cover
+        background-size: 100% 100%
+      @media screen and (max-width: 600px)
+        background: url("../img/bg-mob.png") no-repeat 0 0/cover
+        background-size: 100% 100%
+      @media screen and (max-width: 950px) and (orientation: landscape) and (max-height: 450px)
+        background: url("../img/bg-mob.png") no-repeat 0 0/cover
+        background-size: 100% 100%
+
     &::after
       content: ""
       position: fixed
@@ -121,6 +131,7 @@ body
     min-width: 740px
     margin-right: -200px
     z-index: 3
+    transform-origin: left center
   &__title
     display: flex
     flex-direction: column
@@ -282,36 +293,41 @@ body
 
 // Попапи
 .popup
-  position: relative
+  position: absolute
   background: linear-gradient(135deg, #1a1a3e 0%, #2d1b4e 100%)
   border-radius: 20px
-  padding: 80px 50px
+  padding: 20px 50px
   max-width: 970px
+  min-width: 970px
+  max-height: 900px
+  min-height: 900px
   width: 90%
   max-height: 90vh
   overflow-y: auto
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5)
-  transform: scale(0.8)
   opacity: 0
   transition: transform 0.3s ease, opacity 0.3s ease
   z-index: 10
-  display: none
-  @media (max-width: 600px)
-    padding: 30px 25px
-    max-width: 95%
-  
+  display: flex
+  flex-direction: column
+  align-items: center
+  transition: all 0.6s ease
+  justify-content: center
+  left: 50%
+  top: 50%
+  transform: translate(-50%, -50%)
+  overflow: hidden
+  pointer-events: none
   &.show
-    transform: scale(1)
     opacity: 1
-  
-  .overlay.show &
-    display: block
-
+    pointer-events: initial
   &__btn
     max-width: 390px
     font-size: 37px
-    margin: 0 auto
+    margin: 0 auto 40px auto
     display: block
+    color: $blue
+
   &__close
     position: absolute
     top: 20px
@@ -342,9 +358,8 @@ body
     color: $white
     text-align: center
     text-transform: uppercase
-    margin-bottom: 20px
-    line-height: 1.2
     text-shadow: 0 0 33.288px #2A0C6C
+    margin-bottom: 20px
   
   &__prize
     font-family: $font-favbet-display
@@ -352,7 +367,7 @@ body
     color: $white
     text-align: center
     text-transform: uppercase
-    margin-bottom: 30px
+    margin-bottom: 10px
     text-shadow: 0 0 47.217px #D2BEFF
     line-height: 1
   
@@ -376,22 +391,18 @@ body
     
     &-decor
       position: absolute
-      bottom: -10px
-      right: -20px
-      background: linear-gradient(135deg, #FF267E 0%, #9B2FAE 100%)
+      bottom: 60px
+      right: -50px
+      // background: linear-gradient(135deg, #FF267E 0%, #9B2FAE 100%)
       padding: 12px 20px
       border-radius: 10px
       font-family: $font-favbet-display
-      font-size: 28px
+      font-size: 70px
       color: $white
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3)
-      box-shadow: 0 4px 15px rgba(255, 39, 126, 0.4)
-      transform: rotate(-5deg)
-      @media (max-width: 600px)
-        font-size: 20px
-        padding: 8px 15px
-        bottom: -5px
-        right: -15px
+      text-shadow: 0 0 30px #BD9EFF
+      transform: rotate(-12deg)
+      background: url("../img/popup-glass.png") no-repeat 0 0/cover
+      background-size: 100% 100%
   
   &__text
     font-family: $font-roboto-condensed
@@ -404,12 +415,10 @@ body
       font-weight: bold
   
   &__bottom
-    margin-top: 20px
     font-family: $font-roboto-condensed
-    font-size: 12px
+    font-size: 16px
     color: rgba(255, 255, 255, 0.7)
     text-align: left
-    line-height: 1.4
-    @media (max-width: 600px)
-      font-size: 11px
-      margin-top: 15px
+    position: absolute
+    bottom: 20px
+    left: 20px

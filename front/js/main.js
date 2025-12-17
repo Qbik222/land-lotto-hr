@@ -961,6 +961,8 @@ function initGameGlass() {
     const containerWidth = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth;
     const width = Math.min(760, containerWidth, window.innerWidth);
     const height = width;
+
+    
     
     // Оновлюємо розмір renderer
     renderer.setSize(width, height);
@@ -1167,7 +1169,7 @@ function openPopupByAttr(popupAttr, amount = null, currency = '€') {
     // Ховаємо всі попапи
     allPopups.forEach(p => {
         p.classList.remove('show');
-        p.style.display = 'none';
+        // p.style.display = 'none';
     });
     
     // Блокуємо скрол
@@ -1188,8 +1190,8 @@ function openPopupByAttr(popupAttr, amount = null, currency = '€') {
             }
         }
         
-        // Показуємо попап
-        targetPopup.style.display = 'block';
+        // // Показуємо попап
+        // targetPopup.style.display = 'block';
         // Невелика затримка для анімації
         setTimeout(() => {
             targetPopup.classList.add('show');
@@ -1213,7 +1215,7 @@ function closeAllPopups() {
         overlay.classList.remove('show');
         overlay.classList.add('_opacity');
         allPopups.forEach(p => {
-            p.style.display = 'none';
+            p.classList.remove('show');
         });
         // Відновлюємо скрол
         document.body.style.overflow = 'auto';
@@ -1293,7 +1295,12 @@ if (resetSceneBtn && windController && windController.resetScene) {
 const playWinSequenceBtn = document.getElementById('playWinSequenceBtn');
 if (playWinSequenceBtn && windController && windController.playWinSequence) {
   playWinSequenceBtn.addEventListener('click', () => {
-    windController.playWinSequence('winPopup', 3000, '€');
+    const popupAttr = playWinSequenceBtn.getAttribute('data-popup') || 'winPopup';
+    const amountAttr = playWinSequenceBtn.getAttribute('data-amount');
+    const currencyAttr = playWinSequenceBtn.getAttribute('data-currency');
+    const amount = amountAttr ? Number(amountAttr) : null;
+    const currency = currencyAttr || '€';
+    windController.playWinSequence(popupAttr, amount, currency);
   });
 }
 
@@ -1302,15 +1309,12 @@ const popupTestButtons = document.querySelectorAll('.popup-test-btn');
 popupTestButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         const popupAttr = btn.getAttribute('data-popup');
+        const amountAttr = btn.getAttribute('data-amount');
+        const currencyAttr = btn.getAttribute('data-currency');
         if (popupAttr) {
-            // Визначаємо значення залежно від попапу
-            if (popupAttr === 'winPopup') {
-                openPopupByAttr('winPopup', 3000, '€');
-            } else if (popupAttr === 'winPopup2') {
-                openPopupByAttr('winPopup2', 500, 'FS');
-            } else {
-                openPopupByAttr(popupAttr);
-            }
+            const amount = amountAttr ? Number(amountAttr) : null;
+            const currency = currencyAttr || '€';
+            openPopupByAttr(popupAttr, amount, currency);
         }
     });
 });
